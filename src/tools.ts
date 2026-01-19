@@ -91,3 +91,10 @@ export const getReadOnlyTools = memoize(async (): Promise<Tool[]> => {
   const isEnabled = await Promise.all(tools.map(tool => tool.isEnabled()))
   return tools.filter((_, index) => isEnabled[index])
 })
+
+export const getEditModeTools = memoize(async (): Promise<Tool[]> => {
+  const tools = getAllTools()
+  const isEnabled = await Promise.all(tools.map(tool => tool.isEnabled()))
+  return tools.filter((_, index) => isEnabled[index])
+})
+export const getAskModeTools = getReadOnlyTools

@@ -26,7 +26,7 @@ export { queryLLM, queryQuick } from './services/claude'
 /**
  * 获取所有可用工具（包括自定义工具）
  */
-export { getAllTools } from './tools'
+export { getEditModeTools, getAskModeTools } from './tools'
 
 // ============ 上下文管理 ============
 /**
@@ -53,3 +53,6 @@ export {
 
 // ============ 工具和工具使用上下文类型 ============
 export type { Tool, ToolUseContext, ExtendedToolUseContext } from './Tool'
+
+// ============ hooks导出 ============
+export { CanUseToolFn } from './hooks/useCanUseTool'
