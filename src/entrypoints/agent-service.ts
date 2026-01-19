@@ -311,7 +311,11 @@ Bun.serve({
           '- 这样可以确保所有输出文件都在正确的位置，便于用户查找和管理',
         )
       }
-
+      if (body?.mode === 'ask') {
+        systemPrompt.push(
+          '你应该专注于回答用户的问题，而不是修改代码。',
+        )
+      }
       // context：根据你的需求扩展
       const context: { [k: string]: string } = {
         userId,
@@ -321,7 +325,7 @@ Bun.serve({
       if (files.length) context['files'] = files.join(',')
 
       // 加载全部工具，并允许使用
-      const tools = await loadTools(body?.mode as "ask" | "edit")
+      const tools = await loadTools(body?.mode as 'ask' | 'edit')
       const canUseTool: CanUseToolFn = (async () => true) as any
 
       const abortController = new AbortController()

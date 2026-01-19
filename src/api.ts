@@ -55,4 +55,4 @@ export {
 export type { Tool, ToolUseContext, ExtendedToolUseContext } from './Tool'
 
 // ============ hooks导出 ============
-export { CanUseToolFn } from './hooks/useCanUseTool'
+export type { CanUseToolFn } from './hooks/useCanUseTool'

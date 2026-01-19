@@ -97,4 +97,9 @@ export const getEditModeTools = memoize(async (): Promise<Tool[]> => {
   const isEnabled = await Promise.all(tools.map(tool => tool.isEnabled()))
   return tools.filter((_, index) => isEnabled[index])
 })
-export const getAskModeTools = getReadOnlyTools
+
+export const getAskModeTools = memoize(async (): Promise<Tool[]> => {
+  const tools = await getReadOnlyTools()
+  // Exclude TaskTool in Ask mode
+  return tools.filter(tool => tool.name !== TaskTool.name)
+})
