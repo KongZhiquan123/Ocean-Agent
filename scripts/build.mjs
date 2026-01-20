@@ -270,13 +270,21 @@ import('./entrypoints/cli.js').catch(err => {
 
   // Copy DiffSR-main to dist/services/diffsr
   const diffSRSource = join(SRC_DIR, 'services', 'diffsr')
+  const predictionSource = join(SRC_DIR, 'services', 'prediction')
   const diffSRTarget = join(OUT_DIR, 'services', 'diffsr')
+  const predictionTarget = join(OUT_DIR, 'services', 'prediction')
   try {
     if (existsSync(diffSRSource)) {
       cpSync(diffSRSource, diffSRTarget, { recursive: true })
       console.log('✅ DiffSR-main copied to dist/services/diffsr')
     } else {
       console.warn('⚠️  DiffSR-main not found at src/services/diffsr')
+    }
+    if (existsSync(predictionSource)) {
+      cpSync(predictionSource, predictionTarget, { recursive: true })
+      console.log('✅ Prediction service copied to dist/services/prediction')
+    } else {
+      console.warn('⚠️  Prediction service not found at src/services/prediction')
     }
   } catch (err) {
     console.warn('⚠️  Could not copy DiffSR-main:', err.message)
