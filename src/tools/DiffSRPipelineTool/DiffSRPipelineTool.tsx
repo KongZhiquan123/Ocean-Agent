@@ -1,12 +1,13 @@
 import { Box, Text } from 'ink'
+import React from 'react'
 import { z } from 'zod'
 import { Tool } from '../../Tool.js'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
 import { getCwd } from '@utils/state'
-import { OceanDepsManager } from '@utils/oceanDepsManager'
-import { createAssistantMessage } from '@utils/messages'
+import { OceanDepsManager } from '@utils/oceanDepsManager.js'
+
 const execAsync = promisify(exec)
 
 const inputSchema = z.strictObject({
@@ -109,7 +110,7 @@ Optional: output_dir, gpu_id
 1. Prepare low-resolution input data
 2. inference → Generate super-resolution output
 3. Visualize results with GeoSpatialPlot/StandardChart
-
+4.Generate training report → python src/services/diffsr/report_generator.py train
 ## Example - Train FNO Model:
 {
   "operation": "train",
@@ -218,8 +219,8 @@ export const DiffSRPipelineTool = {
 		try {
 			// Use embedded DiffSR from Kode
 			yield {
-				type: 'progress' as const,
-				content: createAssistantMessage('🔧 Using embedded DiffSR framework...\n')
+				type: 'text' as const,
+				text: '🔧 Using embedded DiffSR framework...\n'
 			}
 			
 			const runtime = await OceanDepsManager.getRuntimeConfig()
@@ -227,8 +228,8 @@ export const DiffSRPipelineTool = {
 			const python_path = runtime.python_path
 			
 			yield {
-				type: 'progress' as const,
-				content: createAssistantMessage(`✓ Embedded DiffSR: ${diffsr_path}\n✓ Python: ${python_path}\n\n`)
+				type: 'text' as const,
+				text: `✓ Embedded DiffSR: ${diffsr_path}\n✓ Python: ${python_path}\n\n`
 			}
 
 			const { operation } = params
@@ -289,8 +290,8 @@ print(json.dumps(configs, indent=2))
 				}
 
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage('🚀 Starting DiffSR training directly...\n\n')
+					type: 'text' as const,
+					text: '🚀 Starting DiffSR training directly...\n\n'
 				}
 
 				// Verify files exist
@@ -305,13 +306,13 @@ print(json.dumps(configs, indent=2))
 				}
 
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage(`✓ DiffSR main.py: ${mainPyPath}\n✓ Config: ${params.config_path}\n✓ Python: ${python_path}\n\n`)
+					type: 'text' as const,
+					text: `✓ DiffSR main.py: ${mainPyPath}\n✓ Config: ${params.config_path}\n✓ Python: ${python_path}\n\n`
 				}
 
 				// Build command to run training in DiffSR directory
 				const isWindows = process.platform === 'win32'
-				let trainCommand: string = ""
+				let trainCommand: string
 				
 				if (isWindows) {
 					// Windows: use cmd /c to change directory and run
@@ -322,51 +323,120 @@ print(json.dumps(configs, indent=2))
 				}
 
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage(`⏳ Executing training command...\n📝 Command: ${trainCommand}\n\n`)
+					type: 'text' as const,
+					text: `⏳ Executing training command...\n📝 Command: ${trainCommand}\n\n`
 				}
 
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage('='.repeat(60) + '\n')
+					type: 'text' as const,
+					text: '=' .repeat(60) + '\n'
 				}
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage('TRAINING OUTPUT:\n')
+					type: 'text' as const,
+					text: 'TRAINING OUTPUT:\n'
 				}
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage('='.repeat(60) + '\n\n')
+					type: 'text' as const,
+					text: '=' .repeat(60) + '\n\n'
 				}
 
 				try {
-					const { stdout, stderr } = await execAsync(trainCommand, {
-						maxBuffer: 200 * 1024 * 1024, // 200MB buffer
-						timeout: 24 * 60 * 60 * 1000, // 24 hours timeout
-						cwd: diffsr_path, // Set working directory
+					// 🔥 使用 spawn 实现流式输出，而不是 execAsync
+					const { spawn } = await import('child_process')
+
+					const trainProcess = spawn('sh', ['-c', trainCommand], {
+						cwd: diffsr_path,
+						stdio: ['ignore', 'pipe', 'pipe'],
+						env: {
+							...process.env,
+							PYTHONUNBUFFERED: '1', // 禁用 Python 输出缓冲，确保实时输出
+						}
 					})
 
-					yield {
-						type: 'progress' as const,
-						content: createAssistantMessage(stdout + '\n')
-					}
+					let allStdout = ''
+					let allStderr = ''
+					let newOutput = '' // 新增的输出，用于实时显示
 
-					if (stderr) {
-						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`\n⚠️  Warnings/Errors:\n${stderr}\n`)
+					// 收集 stdout
+					trainProcess.stdout?.on('data', (data: Buffer) => {
+						const text = data.toString()
+						allStdout += text
+						newOutput += text
+					})
+
+					// 收集 stderr
+					trainProcess.stderr?.on('data', (data: Buffer) => {
+						const text = data.toString()
+						allStderr += text
+						newOutput += text
+					})
+
+					// 🔥 定期输出新增的日志（每秒一次）
+					const outputInterval = setInterval(() => {
+						if (newOutput) {
+							// 无法在这里 yield，所以只能记录
+							console.log('[DiffSRPipeline Training Output]', newOutput)
+							newOutput = '' // 清空已输出的内容
 						}
+					}, 1000)
+
+					// 等待进程完成
+					try {
+						const exitCode = await new Promise<number>((resolve, reject) => {
+							trainProcess.on('exit', (code) => {
+								clearInterval(outputInterval)
+								resolve(code || 0)
+							})
+							trainProcess.on('error', (err) => {
+								clearInterval(outputInterval)
+								reject(err)
+							})
+
+							// 如果 abortController 触发，杀死进程
+							if (abortController.signal.aborted) {
+								trainProcess.kill('SIGTERM')
+								clearInterval(outputInterval)
+								reject(new Error('Training aborted by user'))
+							}
+							abortController.signal.addEventListener('abort', () => {
+								trainProcess.kill('SIGTERM')
+								clearInterval(outputInterval)
+								reject(new Error('Training aborted by user'))
+							})
+						})
+
+						// 🔥 输出完整日志
+						if (allStdout) {
+							yield {
+								type: 'text' as const,
+								text: allStdout + '\n'
+							}
+						}
+
+						if (allStderr) {
+							yield {
+								type: 'text' as const,
+								text: `\n⚠️  Warnings/Errors:\n${allStderr}\n`
+							}
+						}
+
+						// 检查退出码
+						if (exitCode !== 0) {
+							throw new Error(`Training process exited with code ${exitCode}`)
+						}
+					} finally {
+						clearInterval(outputInterval)
 					}
 
 					yield {
-						type: 'progress' as const,
-						content: createAssistantMessage('\n' + '=' .repeat(60) + '\n')
+						type: 'text' as const,
+						text: '\n' + '=' .repeat(60) + '\n'
 					}
 
 					// Generate training report
 					yield {
-						type: 'progress' as const,
-						content: createAssistantMessage('\n📝 Generating training report...\n')
+						type: 'text' as const,
+						text: '\n📝 Generating training report...\n'
 					}
 
 					try {
@@ -374,9 +444,14 @@ print(json.dumps(configs, indent=2))
 							? path.join(params.output_dir, 'training_report.md')
 							: './training_report.md'
 
+						const reportGenScript = path.join(diffsr_path, 'report_generator.py')
+
+						// Extract training metrics from output
+						const reportCommand = `"${python_path}" "${reportGenScript}" train "${params.config_path}" "${reportPath}"`
+
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`📊 Report will be saved to: ${reportPath}\n\n`)
+							type: 'text' as const,
+							text: `📊 Report will be saved to: ${reportPath}\n\n`
 						}
 
 						// Note: This is a simplified version. In production, you'd parse training logs
@@ -384,8 +459,8 @@ print(json.dumps(configs, indent=2))
 
 					} catch (reportError) {
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`⚠️  Could not generate report: ${reportError}\n`)
+							type: 'text' as const,
+							text: `⚠️  Could not generate report: ${reportError}\n`
 						}
 					}
 
@@ -407,21 +482,21 @@ print(json.dumps(configs, indent=2))
 					const stderr = execError.stderr || ''
 					
 					yield {
-						type: 'progress' as const,
-						content: createAssistantMessage(`\n❌ Training failed or interrupted\n\n`)
+						type: 'text' as const,
+						text: `\n❌ Training failed or interrupted\n\n`
 					}
 					
 					if (stdout) {
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`Last output:\n${stdout}\n\n`)
+							type: 'text' as const,
+							text: `Last output:\n${stdout}\n\n`
 						}
 					}
 					
 					if (stderr) {
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`Error details:\n${stderr}\n\n`)
+							type: 'text' as const,
+							text: `Error details:\n${stderr}\n\n`
 						}
 					}
 

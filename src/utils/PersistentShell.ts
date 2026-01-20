@@ -224,9 +224,6 @@ export class PersistentShell {
     const enhancedEnv = {
       ...process.env,
       GIT_EDITOR: 'true',
-      LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH || '',
-      CUDA_HOME: process.env.CUDA_HOME || '',
-      PATH: process.env.PATH || '',
     }
 
     // 🔥 添加常见的 CUDA 路径到 LD_LIBRARY_PATH（如果尚未设置）

@@ -15,30 +15,30 @@ import '@anthropic-ai/sdk/shims/node'
  * 发送消息到 Claude 并获取流式响应
  * 这是最核心的函数，后端主要调用这个
  */
-export { query } from './query'
-export type { Message, UserMessage, AssistantMessage } from './query'
+export { query } from './query.js'
+
 /**
  * Claude API 直接调用函数
  */
-export { queryLLM, queryQuick } from './services/claude'
+export { queryLLM, queryQuick } from './services/claude.js'
 
 // ============ 工具系统 ============
 /**
  * 获取所有可用工具（包括自定义工具）
  */
-export { getEditModeTools, getAskModeTools } from './tools'
+export { getAllTools } from './tools.js'
 
 // ============ 上下文管理 ============
 /**
  * 获取项目上下文（目录结构、Git 状态等）
  */
-export { getContext } from './context'
+export { getContext } from './context.js'
 
 // ============ 模型管理 ============
 /**
  * 模型管理器，用于切换和管理不同的 AI 模型
  */
-export { ModelManager } from './utils/model'
+export { ModelManager } from './utils/model.js'
 
 // ============ 配置管理 ============
 /**
@@ -48,11 +48,19 @@ export {
   getGlobalConfig,
   getCurrentProjectConfig,
   saveGlobalConfig,
-  saveCurrentProjectConfig,
-} from './utils/config'
+  saveCurrentProjectConfig
+} from './utils/config.js'
 
-// ============ 工具和工具使用上下文类型 ============
-export type { Tool, ToolUseContext, ExtendedToolUseContext } from './Tool'
+// ============ 类型定义 ============
+/**
+ * TypeScript 类型导出
+ */
+export type {
+  Message,
+  UserMessage,
+  AssistantMessage,
+  ToolUseContext,
+  ExtendedToolUseContext
+} from './types.js'
 
-// ============ hooks导出 ============
-export type { CanUseToolFn } from './hooks/useCanUseTool'
+export type { Tool } from './Tool.js'

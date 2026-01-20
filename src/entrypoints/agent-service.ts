@@ -3,8 +3,11 @@
 
 import { existsSync } from 'fs'
 import { randomUUID } from 'crypto'
-import { getAskModeTools, getEditModeTools, query, CanUseToolFn } from '../api'
-import type { Message, UserMessage, AssistantMessage, ToolUseContext, Tool } from '../api'
+import { query } from '../query'
+import { getAllTools } from '../api'
+import type { Message, UserMessage, AssistantMessage } from '../query'
+import type { ToolUseContext, Tool } from '../Tool'
+import type { CanUseToolFn } from '../hooks/useCanUseTool'
 
 // 和 src/query.ts 中 ExtendedToolUseContext 保持一致
 interface ExtendedToolUseContext extends ToolUseContext {
@@ -25,28 +28,16 @@ interface ExtendedToolUseContext extends ToolUseContext {
   requestId?: string
 }
 
-// 工具缓存，避免每次请求都重新初始化，但其实因为getTools都使用了React.memoize，所以影响不大，这里是为了处理可能的getTools未使用memoize的情况
-const toolsCache: { ask?: Tool[]; edit?: Tool[] } = {}
-
-async function loadTools(mode: 'ask' | 'edit'): Promise<Tool[]> {
-  if (toolsCache[mode]) {
-    return toolsCache[mode]!
-  }
-
-  let tools: Tool[]
-  if (mode === 'ask') {
-    tools = await getAskModeTools()
-  } else {
-    tools = await getEditModeTools()
-  }
-
-  toolsCache[mode] = tools
-
+// 工具缓存，避免每次请求都重新初始化
+let toolsCache: Tool[] | null = null
+async function loadTools(): Promise<Tool[]> {
+  if (toolsCache) return toolsCache
+  toolsCache = await getAllTools()
   console.log(
-    `[agent-service] loaded ${tools.length} tools for mode ${mode}:`,
-    tools.map((t) => t.name),
+    `[agent-service] loaded ${toolsCache.length} tools:`,
+    toolsCache.map((t) => t.name),
   )
-  return tools
+  return toolsCache
 }
 
 // SSE 辅助：把对象编码成一条 SSE 事件
@@ -311,11 +302,7 @@ Bun.serve({
           '- 这样可以确保所有输出文件都在正确的位置，便于用户查找和管理',
         )
       }
-      if (body?.mode === 'ask') {
-        systemPrompt.push(
-          '你应该专注于回答用户的问题，而不是修改代码。',
-        )
-      }
+
       // context：根据你的需求扩展
       const context: { [k: string]: string } = {
         userId,
@@ -324,8 +311,8 @@ Bun.serve({
       if (outputsPath) context['outputsPath'] = outputsPath
       if (files.length) context['files'] = files.join(',')
 
-      // 加载对应的工具，并允许使用
-      const tools = await loadTools(body?.mode as 'ask' | 'edit')
+      // 加载全部工具，并允许使用
+      const tools = await loadTools()
       const canUseTool: CanUseToolFn = (async () => true) as any
 
       const abortController = new AbortController()

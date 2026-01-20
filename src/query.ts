@@ -197,7 +197,7 @@ export async function* query(
     )
 
     yield createAssistantMessage(
-      `⚠️ The maximum recursion depth (${MAX_RECURSION_DEPTH}) has been exceeded. This usually indicates a potential infinite loop caused by repeated errors. Please review recent error messages and consider trying a different approach.\n\nSuggestions:\n1. Check if tool call parameters are complete\n2. Verify file paths are correct\n3. Try breaking down complex tasks into smaller steps.`
+      `⚠️ 检测到可能的无限循环：已达到最大递归深度 (${MAX_RECURSION_DEPTH})。\n\n这通常是由于重复出现的错误导致的。请检查最近的错误信息并尝试不同的方法。\n\n建议：\n1. 检查工具调用参数是否完整\n2. 确认文件路径是否正确\n3. 尝试将复杂任务拆分为更小的步骤`
     )
     return
   }
