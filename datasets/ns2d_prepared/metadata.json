@@ -1,0 +1,16 @@
+{
+  "dataset_type": "ns2d",
+  "scale_factor": 4,
+  "mean": 6.373253569336157e-08,
+  "std": 0.260929137468338,
+  "train_samples": 960,
+  "test_samples": 240,
+  "hr_shape": [
+    64,
+    64
+  ],
+  "lr_shape": [
+    16,
+    16
+  ]
+}

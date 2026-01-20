@@ -28,13 +28,13 @@ interface ExtendedToolUseContext extends ToolUseContext {
 // 工具缓存，避免每次请求都重新初始化，但其实因为getTools都使用了React.memoize，所以影响不大，这里是为了处理可能的getTools未使用memoize的情况
 const toolsCache: { ask?: Tool[]; edit?: Tool[] } = {}
 
-async function loadTools(mode: "ask" | "edit"): Promise<Tool[]> {
+async function loadTools(mode: 'ask' | 'edit'): Promise<Tool[]> {
   if (toolsCache[mode]) {
     return toolsCache[mode]!
   }
 
   let tools: Tool[]
-  if (mode === "ask") {
+  if (mode === 'ask') {
     tools = await getAskModeTools()
   } else {
     tools = await getEditModeTools()
@@ -324,7 +324,7 @@ Bun.serve({
       if (outputsPath) context['outputsPath'] = outputsPath
       if (files.length) context['files'] = files.join(',')
 
-      // 加载全部工具，并允许使用
+      // 加载对应的工具，并允许使用
       const tools = await loadTools(body?.mode as 'ask' | 'edit')
       const canUseTool: CanUseToolFn = (async () => true) as any
 

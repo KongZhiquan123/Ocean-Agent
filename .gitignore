@@ -200,7 +200,7 @@ __pycache__/
 node_modules/
 
 # Datasets files
-datasets/
+./datasets/
 *_dataset/
 outputs/
 *_output/

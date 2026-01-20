@@ -71,7 +71,7 @@ const inputSchema = z.strictObject({
     .default(['coastlines', 'borders'])
     .describe('Basemap features to display'),
   extent: z
-    .tuple([z.number(), z.number(), z.number(), z.number()])
+    .tuple([z.number(), z.number(), z.number(), z.number()]).rest(z.never())
     .optional()
     .describe('Map extent [lon_min, lon_max, lat_min, lat_max]'),
   colormap: z
@@ -194,13 +194,13 @@ export const GeoSpatialPlotTool = {
         <Box flexDirection="column">
           <Box flexDirection="row">
             <Text>&nbsp;&nbsp;⎿ &nbsp;</Text>
-            <Text color={getTheme().successText}>
-              Created {data.plotType} map with {data.metadata.dataPoints} points
+            <Text color={getTheme().success}>
+              Created {data.metadata.plotType} map with {data.metadata.dataPoints} points
             </Text>
           </Box>
 
           <Box flexDirection="row" marginLeft={5}>
-            <Text color={getTheme().infoText}>
+            <Text color={getTheme().primary}>
               Saved to: {relative(getCwd(), data.outputFile)}
             </Text>
           </Box>
@@ -216,7 +216,7 @@ export const GeoSpatialPlotTool = {
           {data.warnings && data.warnings.length > 0 && (
             <Box flexDirection="column" marginLeft={5}>
               {data.warnings.slice(0, 2).map((warning, idx) => (
-                <Text key={idx} color={getTheme().warningText}>
+                <Text key={idx} color={getTheme().warning}>
                   ⚠ {warning}
                 </Text>
               ))}
@@ -382,7 +382,7 @@ export const GeoSpatialPlotTool = {
         : undefined
 
       // Determine extent
-      const plotExtent = extent || autoExtent(lonRange, latRange)
+      const plotExtent = (extent || autoExtent(lonRange, latRange)) as [number, number, number, number]
 
       // Generate plot
       const plotData = {

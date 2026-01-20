@@ -228,7 +228,7 @@ export const TimeSeriesAnalysisTool = {
         <Box flexDirection="column">
           <Box flexDirection="row">
             <Text>&nbsp;&nbsp;⎿ &nbsp;</Text>
-            <Text color={getTheme().successText}>
+            <Text color={getTheme().success}>
               Analyzed {data.dataInfo.dataPoints} data points
             </Text>
           </Box>
@@ -246,8 +246,8 @@ export const TimeSeriesAnalysisTool = {
               <Text
                 color={
                   data.stationarityTest.isStationary
-                    ? getTheme().successText
-                    : getTheme().warningText
+                    ? getTheme().success
+                    : getTheme().warning
                 }
               >
                 {data.stationarityTest.conclusion}
@@ -257,7 +257,7 @@ export const TimeSeriesAnalysisTool = {
 
           {data.forecast && (
             <Box flexDirection="row" marginLeft={5}>
-              <Text color={getTheme().infoText}>
+              <Text color={getTheme().primary}>
                 Forecast: {data.forecast.periods} periods using {data.forecast.method}
               </Text>
             </Box>
@@ -265,7 +265,7 @@ export const TimeSeriesAnalysisTool = {
 
           {data.anomalies && data.anomalies.count > 0 && (
             <Box flexDirection="row" marginLeft={5}>
-              <Text color={getTheme().warningText}>
+              <Text color={getTheme().warning}>
                 ⚠ Detected {data.anomalies.count} anomalies
               </Text>
             </Box>
@@ -274,7 +274,7 @@ export const TimeSeriesAnalysisTool = {
           {data.warnings && data.warnings.length > 0 && (
             <Box flexDirection="column" marginLeft={5}>
               {data.warnings.slice(0, 3).map((warning, idx) => (
-                <Text key={idx} color={getTheme().warningText}>
+                <Text key={idx} color={getTheme().warning}>
                   ⚠ {warning}
                 </Text>
               ))}
