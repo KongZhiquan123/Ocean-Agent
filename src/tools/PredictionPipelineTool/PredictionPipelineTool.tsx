@@ -6,8 +6,7 @@ import { exec } from 'child_process'
 import { promisify } from 'util'
 import path from 'path'
 import { getCwd } from '@utils/state'
-import { OceanDepsManager } from '@utils/oceanDepsManager'
-import { createAssistantMessage } from '@utils/messages'
+import { OceanDepsManager } from '@utils/oceanDepsManager.js'
 
 const execAsync = promisify(exec)
 
@@ -232,6 +231,8 @@ export const PredictionPipelineTool = {
 		)
 	},
 	renderResultForAssistant(output: Output) {
+		
+
 		return output.result
 	},
 	async *call(params: Input, { abortController }: { abortController: AbortController }) {
@@ -240,8 +241,8 @@ export const PredictionPipelineTool = {
 		try {
 			// Use embedded Prediction from Kode
 			yield {
-				type: 'progress' as const,
-				content: createAssistantMessage('🔧 Using embedded Prediction framework...\n')
+				type: 'text' as const,
+				text: '🔧 Using embedded Prediction framework...\n'
 			}
 
 			const runtime = await OceanDepsManager.getRuntimeConfig()
@@ -249,8 +250,8 @@ export const PredictionPipelineTool = {
 			const python_path = runtime.python_path
 
 			yield {
-				type: 'progress' as const,
-				content: createAssistantMessage(`✓ Embedded Prediction: ${prediction_path}\n✓ Python: ${python_path}\n\n`)
+				type: 'text' as const,
+				text: `✓ Embedded Prediction: ${prediction_path}\n✓ Python: ${python_path}\n\n`
 			}
 
 			const { operation } = params
@@ -311,8 +312,8 @@ print(json.dumps(configs, indent=2))
 				}
 
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage('🚀 Starting Prediction training...\n\n')
+					type: 'text' as const,
+					text: '🚀 Starting Prediction training...\n\n'
 				}
 
 				// Verify files exist
@@ -327,8 +328,8 @@ print(json.dumps(configs, indent=2))
 				}
 
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage(`✓ Prediction main.py: ${mainPyPath}\n✓ Config: ${params.config_path}\n✓ Python: ${python_path}\n\n`)
+					type: 'text' as const,
+					text: `✓ Prediction main.py: ${mainPyPath}\n✓ Config: ${params.config_path}\n✓ Python: ${python_path}\n\n`
 				}
 
 				// Build command to run training in Prediction directory
@@ -342,21 +343,21 @@ print(json.dumps(configs, indent=2))
 				}
 
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage(`⏳ Executing training command...\n📝 Command: ${trainCommand}\n\n`)
+					type: 'text' as const,
+					text: `⏳ Executing training command...\n📝 Command: ${trainCommand}\n\n`
 				}
 
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage('='.repeat(60) + '\n')
+					type: 'text' as const,
+					text: '=' .repeat(60) + '\n'
 				}
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage('TRAINING OUTPUT:\n')
+					type: 'text' as const,
+					text: 'TRAINING OUTPUT:\n'
 				}
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage('='.repeat(60) + '\n\n')
+					type: 'text' as const,
+					text: '=' .repeat(60) + '\n\n'
 				}
 
 				try {
@@ -367,26 +368,26 @@ print(json.dumps(configs, indent=2))
 					})
 
 					yield {
-						type: 'progress' as const,
-						content: createAssistantMessage(stdout + '\n')
+						type: 'text' as const,
+						text: stdout + '\n'
 					}
 
 					if (stderr) {
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`\n⚠️  Warnings/Errors:\n${stderr}\n`)
+							type: 'text' as const,
+							text: `\n⚠️  Warnings/Errors:\n${stderr}\n`
 						}
 					}
 
 					yield {
-						type: 'progress' as const,
-						content: createAssistantMessage('\n' + '=' .repeat(60) + '\n')
+						type: 'text' as const,
+						text: '\n' + '=' .repeat(60) + '\n'
 					}
 
 					// Generate training report
 					yield {
-						type: 'progress' as const,
-						content: createAssistantMessage('\n📝 Generating training report...\n')
+						type: 'text' as const,
+						text: '\n📝 Generating training report...\n'
 					}
 
 					try {
@@ -394,9 +395,11 @@ print(json.dumps(configs, indent=2))
 							? path.join(params.output_dir, 'training_report.md')
 							: './training_report.md'
 
+						const reportGenScript = path.join(prediction_path, 'report_generator.py')
+
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`📊 Report will be saved to: ${reportPath}\n\n`)
+							type: 'text' as const,
+							text: `📊 Report will be saved to: ${reportPath}\n\n`
 						}
 
 						// Note: In production, parse training logs to extract metrics
@@ -404,8 +407,8 @@ print(json.dumps(configs, indent=2))
 
 					} catch (reportError) {
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`⚠️  Could not generate report: ${reportError}\n`)
+							type: 'text' as const,
+							text: `⚠️  Could not generate report: ${reportError}\n`
 						}
 					}
 
@@ -426,21 +429,21 @@ print(json.dumps(configs, indent=2))
 					const stderr = execError.stderr || ''
 
 					yield {
-						type: 'progress' as const,
-						content: createAssistantMessage(`\n❌ Training failed or interrupted\n\n`)
+						type: 'text' as const,
+						text: `\n❌ Training failed or interrupted\n\n`
 					}
 
 					if (stdout) {
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`Last output:\n${stdout}\n\n`)
+							type: 'text' as const,
+							text: `Last output:\n${stdout}\n\n`
 						}
 					}
 
 					if (stderr) {
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`Error details:\n${stderr}\n\n`)
+							type: 'text' as const,
+							text: `Error details:\n${stderr}\n\n`
 						}
 					}
 
@@ -463,8 +466,8 @@ print(json.dumps(configs, indent=2))
 				}
 
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage('🔮 Starting Prediction testing...\n\n')
+					type: 'text' as const,
+					text: '🔮 Starting Prediction testing...\n\n'
 				}
 
 				const fs = await import('fs/promises')
@@ -488,8 +491,8 @@ print(json.dumps(configs, indent=2))
 				}
 
 				yield {
-					type: 'progress' as const,
-					content: createAssistantMessage(`⏳ Executing test command...\n\n`)
+					type: 'text' as const,
+					text: `⏳ Executing test command...\n\n`
 				}
 
 				try {
@@ -500,14 +503,14 @@ print(json.dumps(configs, indent=2))
 					})
 
 					yield {
-						type: 'progress' as const,
-						content: createAssistantMessage(stdout + '\n')
+						type: 'text' as const,
+						text: stdout + '\n'
 					}
 
 					if (stderr) {
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`\n⚠️  Warnings:\n${stderr}\n`)
+							type: 'text' as const,
+							text: `\n⚠️  Warnings:\n${stderr}\n`
 						}
 					}
 
