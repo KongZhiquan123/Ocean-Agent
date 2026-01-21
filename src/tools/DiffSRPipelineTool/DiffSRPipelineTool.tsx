@@ -514,77 +514,228 @@ print(json.dumps(configs, indent=2))
 				return
 			}
 
-			if (operation === 'inference') {
-				if (!params.model_path || !params.input_data) {
-					throw new Error('model_path and input_data required for inference')
+		if (operation === 'inference') {
+			if (!params.model_path || !params.output_dir) {
+				throw new Error('model_path (model directory) and output_dir required for inference')
+			}
+
+			yield {
+				type: 'progress' as const,
+				content: createAssistantMessage('🚀 Starting DiffSR inference...\n\n')
+			}
+
+			// Verify files exist
+			const fs = await import('fs/promises')
+			const inferenceScript = path.join(diffsr_path, 'inference.py')
+			const modelDir = path.resolve(getCwd(), params.model_path)
+			const modelPath = path.join(modelDir, 'best_model.pth')
+			const configPath = path.join(modelDir, 'config.yaml')
+
+			try {
+				await fs.access(inferenceScript)
+				await fs.access(modelPath)
+				await fs.access(configPath)
+			} catch (e) {
+				throw new Error(`Required file not found: ${e}`)
+			}
+
+			yield {
+				type: 'progress' as const,
+				content: createAssistantMessage(
+					`✓ Inference script: ${inferenceScript}\n` +
+					`✓ Model directory: ${modelDir}\n` +
+					`✓ Model checkpoint: best_model.pth\n` +
+					`✓ Config file: config.yaml\n\n`
+				)
+			}
+
+			// Prepare output directory
+			const outputDir = path.resolve(getCwd(), params.output_dir)
+			await fs.mkdir(outputDir, { recursive: true })
+
+			yield {
+				type: 'progress' as const,
+				content: createAssistantMessage(`✓ Output directory: ${outputDir}\n\n`)
+			}
+
+			// Determine forecaster type from model_type
+			let forecastorType = 'base'
+			if (params.model_type) {
+				if (['ddpm', 'sr3', 'mg_ddpm'].includes(params.model_type)) {
+					forecastorType = 'ddpm'
+				} else if (params.model_type === 'resshift') {
+					forecastorType = 'resshift'
 				}
+			}
 
-				const inferenceScript = `
-import sys
-import os
-from pathlib import Path
-import json
-import numpy as np
-import torch
+			// Build inference command
+			const isWindows = process.platform === 'win32'
+			let inferenceCommand: string
 
-# Add DiffSR to path
-diffsr_path = Path("${diffsr_path.replace(/\\/g, '/')}")
-sys.path.insert(0, str(diffsr_path))
+			if (isWindows) {
+				inferenceCommand = `cmd /c "cd /d "${diffsr_path}" && "${python_path}" inference.py --model_dir "${modelDir}" --forecastor_type ${forecastorType} --output_dir "${outputDir}" --split test"`
+			} else {
+				inferenceCommand = `cd "${diffsr_path}" && "${python_path}" inference.py --model_dir "${modelDir}" --forecastor_type ${forecastorType} --output_dir "${outputDir}" --split test`
+			}
 
-try:
-    # Load input data
-    input_path = "${params.input_data?.replace(/\\/g, '/')}"
-    if input_path.endswith('.npy'):
-        data = np.load(input_path)
-    elif input_path.endswith('.npz'):
-        data_dict = np.load(input_path)
-        data = data_dict[list(data_dict.keys())[0]]
-    else:
-        raise ValueError("Unsupported input format")
+			yield {
+				type: 'progress' as const,
+				content: createAssistantMessage(
+					`⏳ Executing inference...\n` +
+					`📝 Forecaster: ${forecastorType}\n` +
+					`📊 Split: test\n\n`
+				)
+			}
 
-    # Load model checkpoint
-    model_path = "${params.model_path?.replace(/\\/g, '/')}"
-    checkpoint = torch.load(model_path, map_location='cpu')
+			yield {
+				type: 'progress' as const,
+				content: createAssistantMessage('=' .repeat(60) + '\n')
+			}
+			yield {
+				type: 'progress' as const,
+				content: createAssistantMessage('INFERENCE OUTPUT:\n')
+			}
+			yield {
+				type: 'progress' as const,
+				content: createAssistantMessage('=' .repeat(60) + '\n\n')
+			}
 
-    device = torch.device(f'cuda:${params.gpu_id}' if ${params.gpu_id} >= 0 and torch.cuda.is_available() else 'cpu')
+			try {
+				// Execute inference using spawn for streaming output
+				const { spawn } = await import('child_process')
 
-    result = {
-        'status': 'inference_ready',
-        'model': model_path,
-        'input_shape': list(data.shape),
-        'device': str(device),
-        'checkpoint_keys': list(checkpoint.keys())[:5],
-        'message': 'Model and data loaded. Use forecastors module for actual inference.'
-    }
-
-    ${params.output_dir ? `
-    output_dir = Path("${params.output_dir.replace(/\\/g, '/')}")
-    output_dir.mkdir(parents=True, exist_ok=True)
-    result['output_dir'] = str(output_dir)
-    ` : ''}
-
-    print(json.dumps(result, indent=2))
-
-except Exception as e:
-    print(json.dumps({'error': str(e)}), file=sys.stderr)
-    sys.exit(1)
-`
-				const tempScript = path.join(getCwd(), '.diffsr_inference.py')
-				const fs = await import('fs/promises')
-				await fs.writeFile(tempScript, inferenceScript)
-
-				const { stdout, stderr } = await execAsync(`"${python_path}" "${tempScript}"`, {
-					maxBuffer: 50 * 1024 * 1024,
+				const inferenceProcess = spawn(isWindows ? 'cmd' : 'sh', [isWindows ? '/c' : '-c', inferenceCommand], {
+					cwd: diffsr_path,
+					stdio: ['ignore', 'pipe', 'pipe'],
+					env: {
+						...process.env,
+						PYTHONUNBUFFERED: '1',
+					}
 				})
 
-				await fs.unlink(tempScript)
+				let allStdout = ''
+				let allStderr = ''
 
-				if (stderr && !stdout) {
-					throw new Error(stderr)
+				// Collect stdout
+				inferenceProcess.stdout?.on('data', (data: Buffer) => {
+					const text = data.toString()
+					allStdout += text
+				})
+
+				// Collect stderr
+				inferenceProcess.stderr?.on('data', (data: Buffer) => {
+					const text = data.toString()
+					allStderr += text
+				})
+
+				// Wait for process to complete
+				const exitCode = await new Promise<number>((resolve, reject) => {
+					inferenceProcess.on('exit', (code) => {
+						resolve(code || 0)
+					})
+					inferenceProcess.on('error', (err) => {
+						reject(err)
+					})
+
+					// Handle abort
+					if (abortController.signal.aborted) {
+						inferenceProcess.kill('SIGTERM')
+						reject(new Error('Inference aborted by user'))
+					}
+					abortController.signal.addEventListener('abort', () => {
+						inferenceProcess.kill('SIGTERM')
+						reject(new Error('Inference aborted by user'))
+					})
+				})
+
+				// Output complete logs
+				if (allStdout) {
+					yield {
+						type: 'progress' as const,
+						content: createAssistantMessage(allStdout + '\n')
+					}
+				}
+
+				if (allStderr) {
+					yield {
+						type: 'progress' as const,
+						content: createAssistantMessage(`\n⚠️  Warnings:\n${allStderr}\n`)
+					}
+				}
+
+				yield {
+					type: 'progress' as const,
+					content: createAssistantMessage('\n' + '=' .repeat(60) + '\n')
+				}
+
+				// Check exit code
+				if (exitCode !== 0) {
+					throw new Error(`Inference process exited with code ${exitCode}`)
+				}
+
+				// Read metrics.json
+				const metricsFile = path.join(outputDir, 'metrics.json')
+				let metricsData: any = {}
+
+				try {
+					const metricsContent = await fs.readFile(metricsFile, 'utf-8')
+					metricsData = JSON.parse(metricsContent)
+				} catch (e) {
+					yield {
+						type: 'progress' as const,
+						content: createAssistantMessage(`⚠️  Could not read metrics.json: ${e}\n`)
+					}
+				}
+
+				// Format result message
+				const resultMsg = `✅ Inference completed successfully!\n\n` +
+					`📊 Results:\n` +
+					`  - PSNR: ${metricsData.best_psnr?.toFixed(4) || 'N/A'} dB\n` +
+					`  - SSIM: ${metricsData.best_ssim?.toFixed(4) || 'N/A'}\n` +
+					`  - MSE: ${metricsData.test_metrics?.mse?.toFixed(6) || 'N/A'}\n` +
+					`  - RMSE: ${metricsData.test_metrics?.rmse?.toFixed(6) || 'N/A'}\n\n` +
+					`💾 Output:\n` +
+					`  - Metrics: ${metricsFile}\n` +
+					`  - Report: ${path.join(outputDir, 'inference_report.md')}\n`
+
+				const output: Output = {
+					result: resultMsg,
+					durationMs: Date.now() - start,
+				}
+
+				yield {
+					type: 'result' as const,
+					resultForAssistant: this.renderResultForAssistant(output),
+					data: output,
+				}
+
+			} catch (execError: any) {
+				// Handle execution errors
+				const errorMsg = execError.message || String(execError)
+				const stdout = execError.stdout || ''
+				const stderr = execError.stderr || ''
+
+				yield {
+					type: 'progress' as const,
+					content: createAssistantMessage(`\n❌ Inference failed or interrupted\n\n`)
+				}
+
+				if (stdout) {
+					yield {
+						type: 'progress' as const,
+						content: createAssistantMessage(`Last output:\n${stdout}\n\n`)
+					}
+				}
+
+				if (stderr) {
+					yield {
+						type: 'progress' as const,
+						content: createAssistantMessage(`Error details:\n${stderr}\n\n`)
+					}
 				}
 
 				const output: Output = {
-					result: stdout || 'Inference configured',
+					result: `Inference error: ${errorMsg}\n\nPartial output captured above.`,
 					durationMs: Date.now() - start,
 				}
 				yield {
@@ -592,8 +743,9 @@ except Exception as e:
 					resultForAssistant: this.renderResultForAssistant(output),
 					data: output,
 				}
-				return
 			}
+			return
+		}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error)
 			const output: Output = {
