@@ -26,8 +26,7 @@ import { OceanPreprocessPipelineTool } from './tools/OceanPreprocessPipelineTool
 import { OceanDatabaseQueryTool } from './tools/OceanDatabaseQueryTool/OceanDatabaseQueryTool'
 import { OceanProfileAnalysisTool } from './tools/OceanProfileAnalysisTool/OceanProfileAnalysisTool'
 import { TimeSeriesAnalysisTool } from './tools/TimeSeriesAnalysisTool/TimeSeriesAnalysisTool'
-import { GeoSpatialPlotTool } from './tools/GeoSpatialPlotTool/GeoSpatialPlotTool'
-import { StandardChartTool } from './tools/StandardChartTool/StandardChartTool'
+import { OceanVisualizationTool } from './tools/OceanVisualizationTool/OceanVisualizationTool'
 import { OceanDashboardTool } from './tools/OceanDashboardTool/OceanDashboardTool'
 // Ocean deep learning tools (from Ocean-skill integration)
 import { OceanFNOTrainingTool } from './tools/OceanFNOTrainingTool/OceanFNOTrainingTool'
@@ -74,9 +73,8 @@ export const getAllTools = (): Tool[] => {
     OceanDatabaseQueryTool as unknown as Tool,
     OceanProfileAnalysisTool as unknown as Tool,
     TimeSeriesAnalysisTool as unknown as Tool,
-    GeoSpatialPlotTool as unknown as Tool,
+    OceanVisualizationTool as unknown as Tool,
     OceanDashboardTool as unknown as Tool,
-    StandardChartTool as unknown as Tool,
     // Ocean deep learning tools
     OceanFNOTrainingTool as unknown as Tool,
     OceanOptunaOptimizeTool as unknown as Tool,
