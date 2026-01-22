@@ -1,0 +1,4 @@
+- 用户报告运行 `python main.py --config template_configs/Ocean/fno.yaml` 遇到错误。
+- 检查文件结构，发现 `main.py` 和 `template_configs/Ocean/fno.yaml` 的路径不正确。
+- 建议用户尝试运行 `python dist/services/diffsr/main.py --config dist/services/diffsr/template_configs/Ocean/fno.yaml`。
+- 等待用户提供具体的错误信息。

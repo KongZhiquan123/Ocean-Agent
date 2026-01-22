@@ -215,3 +215,4 @@ outputs/
 *.npy
 era5_*
 ERA5_*
+.Ocean_agent**
