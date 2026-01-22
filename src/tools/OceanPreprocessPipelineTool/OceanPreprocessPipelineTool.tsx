@@ -117,8 +117,7 @@ export const OceanPreprocessPipelineTool = {
     const summary = [
       `status: ${status}`,
       `report: ${output.reportPath}`,
-      `output: ${output.stdout.trim()}`,
-      `error: ${output.stderr.trim()}`,
+      `output: ${output.stdout.trim()}`
     ]
       .filter(Boolean)
       .join('\n')
@@ -189,6 +188,9 @@ export const OceanPreprocessPipelineTool = {
           resolve(code)
         })
       })
+      if (exitCode !== 0) {
+        throw new Error(stderrChunks.join('').trim() || 'Preprocessing failed')
+      }
       const output: Output = {
         durationMs: Date.now() - start,
         exitCode,

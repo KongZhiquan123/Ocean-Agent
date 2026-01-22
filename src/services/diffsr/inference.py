@@ -181,7 +181,7 @@ def main():
             output_path=str(report_path)
         )
 
-        print(f"✅ Report generated: {report_path}\n")
+        print(f"✅ Report generated: {str(report_path)}\n")
     except Exception as e:
         print(f"⚠️  Warning: Could not generate report: {e}")
         import traceback
