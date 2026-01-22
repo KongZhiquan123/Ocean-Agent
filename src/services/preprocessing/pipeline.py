@@ -5,9 +5,8 @@
 """
 
 import os
-import torch
-from .nc_preprocessor import NCPreprocessor
-from .validator import PreprocessValidator
+from nc_preprocessor import NCPreprocessor
+from validator import PreprocessValidator
 
 
 def run_preprocessing_pipeline(config: dict) -> bool:

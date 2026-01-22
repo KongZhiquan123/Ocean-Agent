@@ -271,8 +271,10 @@ import('./entrypoints/cli.js').catch(err => {
   // Copy DiffSR-main to dist/services/diffsr
   const diffSRSource = join(SRC_DIR, 'services', 'diffsr')
   const predictionSource = join(SRC_DIR, 'services', 'prediction')
+  const preprocessSource = join(SRC_DIR, 'services', 'preprocessing')
   const diffSRTarget = join(OUT_DIR, 'services', 'diffsr')
   const predictionTarget = join(OUT_DIR, 'services', 'prediction')
+  const preprocessTarget = join(OUT_DIR, 'services', 'preprocessing')
   try {
     if (existsSync(diffSRSource)) {
       cpSync(diffSRSource, diffSRTarget, { recursive: true })
@@ -285,6 +287,12 @@ import('./entrypoints/cli.js').catch(err => {
       console.log('✅ Prediction service copied to dist/services/prediction')
     } else {
       console.warn('⚠️  Prediction service not found at src/services/prediction')
+    }
+    if (existsSync(preprocessSource)) {
+      cpSync(preprocessSource, preprocessTarget, { recursive: true })
+      console.log('✅ Preprocessing service copied to dist/services/preprocessing')
+    } else {
+      console.warn('⚠️  Preprocessing service not found at src/services/preprocessing')
     }
   } catch (err) {
     console.warn('⚠️  Could not copy DiffSR-main:', err.message)
