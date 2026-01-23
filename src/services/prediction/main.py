@@ -10,7 +10,8 @@ from utils import set_up_logger, set_seed, load_config, get_dir_path, save_confi
 from procedures.base import base_procedure
 from procedures.ocean_procedure import ocean_procedure
 import os
-import torch
+import sys
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 
 def main():

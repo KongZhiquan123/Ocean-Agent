@@ -2,7 +2,6 @@ import { exec } from 'child_process'
 import { promisify } from 'util'
 import fs from 'fs/promises'
 import path from 'path'
-import os from 'os'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 
@@ -15,8 +14,8 @@ const __dirname = dirname(__filename)
 export class OceanDepsManager {
 	private static diffSRPath: string | null = null
 	private static predictionPath: string | null = null
+	private static preprocessingPath: string | null = null
 	private static pythonPath: string | null = null
-
 	/**
 	 * 获取 DiffSR 路径
 	 * 优先级：嵌入式路径（产品自带）> 环境变量 > 用户自定义路径
@@ -146,7 +145,31 @@ export class OceanDepsManager {
 			)
 		}
 	}
-
+	static async ensurePreprocessing(): Promise<string> {
+		if (this.preprocessingPath) return this.preprocessingPath
+		// 1. 优先使用嵌入的 Preprocessing（产品自带，开箱即用）
+		const bundledPath = path.resolve(__dirname, '..', 'services', 'preprocessing')
+		try {
+			await fs.access(path.join(bundledPath, 'main.py'))
+			this.preprocessingPath = bundledPath
+			console.log(`✓ Using embedded Preprocessing (built-in): ${bundledPath}`)
+			return bundledPath
+		} catch {
+			console.log(`ℹ Embedded Preprocessing not found, trying alternative locations...`)
+		}
+		// 2. 回退：环境变量指定的路径（用于高级用户自定义）
+		if (process.env.PREPROCESSING_PATH) {
+			try {
+				await fs.access(path.join(process.env.PREPROCESSING_PATH, 'main.py'))
+				this.preprocessingPath = process.env.PREPROCESSING_PATH
+				console.log(`✓ Using Preprocessing from PREPROCESSING_PATH: ${this.preprocessingPath}`)
+				return this.preprocessingPath
+			} catch {
+				console.warn(`⚠ PREPROCESSING_PATH set but invalid: ${process.env.PREPROCESSING_PATH}`)
+			}
+		}
+		// 此处将不再使用开发者路径，确保预处理脚本必须随产品一起提供
+	}
 	/**
 	 * 查找可用的 Python 解释器
 	 */

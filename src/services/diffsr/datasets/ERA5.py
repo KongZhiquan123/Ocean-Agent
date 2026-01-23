@@ -24,7 +24,7 @@ class ERA5Dataset:
         process_path = data_path.split('.')[0] + str(sample_factor) + '_sr.pt'
         if osp.exists(process_path):
             print('Loading processed data from ', process_path)
-            train_x, train_y, valid_x, valid_y, test_x, test_y, normalizer = torch.load(process_path)
+            train_x, train_y, valid_x, valid_y, test_x, test_y, normalizer = torch.load(process_path, weights_only=False)
         else:
             print('Processing data...')
             # Load ERA5 data from .npy file

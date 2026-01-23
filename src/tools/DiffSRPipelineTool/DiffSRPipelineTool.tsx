@@ -261,8 +261,8 @@ configs = []
 for root, dirs, files in os.walk(template_dir):
     for file in files:
         if file.endswith('.yaml'):
-            rel_path = os.path.relpath(os.path.join(root, file), template_dir)
-            configs.append(rel_path)
+            abs_path = os.path.join(root, file)
+            configs.append(str(abs_path))
 
 print(json.dumps(configs, indent=2))
 `
@@ -311,17 +311,7 @@ print(json.dumps(configs, indent=2))
 					content: createAssistantMessage(`✓ DiffSR main.py: ${mainPyPath}\n✓ Config: ${params.config_path}\n✓ Python: ${python_path}\n\n`)
 				}
 
-				// Build command to run training in DiffSR directory
-				const isWindows = process.platform === 'win32'
-				let trainCommand: string
-				
-				if (isWindows) {
-					// Windows: use cmd /c to change directory and run
-					trainCommand = `cmd /c "cd /d "${diffsr_path}" && "${python_path}" main.py --config "${params.config_path}""`
-				} else {
-					// Linux/Mac: use sh -c
-					trainCommand = `cd "${diffsr_path}" && "${python_path}" main.py --config "${params.config_path}"`
-				}
+				const trainCommand = `"${python_path}" "${mainPyPath}" --config "${params.config_path}"`
 
 				yield {
 					type: 'progress' as const,
@@ -423,7 +413,7 @@ print(json.dumps(configs, indent=2))
 
 						// 检查退出码
 						if (exitCode !== 0) {
-							throw new Error(`Training process exited with code ${exitCode}`)
+							throw new Error(`Training failed with error: ${allStderr || 'Unknown error'}`)
 						}
 					} finally {
 						clearInterval(outputInterval)
@@ -568,15 +558,7 @@ print(json.dumps(configs, indent=2))
 				}
 			}
 
-			// Build inference command
-			const isWindows = process.platform === 'win32'
-			let inferenceCommand: string
-
-			if (isWindows) {
-				inferenceCommand = `cmd /c "cd /d "${diffsr_path}" && "${python_path}" inference.py --model_dir "${modelDir}" --forecastor_type ${forecastorType} --output_dir "${outputDir}" --split test"`
-			} else {
-				inferenceCommand = `cd "${diffsr_path}" && "${python_path}" inference.py --model_dir "${modelDir}" --forecastor_type ${forecastorType} --output_dir "${outputDir}" --split test`
-			}
+			const inferenceCommand = `"${python_path}" "${inferenceScript}" --model_dir "${modelDir}" --forecastor_type ${forecastorType} --output_dir "${outputDir}" --split test`
 
 			yield {
 				type: 'progress' as const,
@@ -604,7 +586,7 @@ print(json.dumps(configs, indent=2))
 				// Execute inference using spawn for streaming output
 				const { spawn } = await import('child_process')
 
-				const inferenceProcess = spawn(isWindows ? 'cmd' : 'sh', [isWindows ? '/c' : '-c', inferenceCommand], {
+				const inferenceProcess = spawn('sh', ['-c', inferenceCommand], {
 					cwd: diffsr_path,
 					stdio: ['ignore', 'pipe', 'pipe'],
 					env: {
@@ -670,7 +652,7 @@ print(json.dumps(configs, indent=2))
 
 				// Check exit code
 				if (exitCode !== 0) {
-					throw new Error(`Inference process exited with code ${exitCode}`)
+					throw new Error(`Inference failed with error: ${allStderr || 'Unknown error'}`)
 				}
 
 				// Read metrics.json

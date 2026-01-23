@@ -42,7 +42,7 @@ class OceanDataset:
         
         if osp.exists(process_path):
             print(f'Loading processed {data_key} data from {process_path}')
-            train_x, train_y, valid_x, valid_y, test_x, test_y, normalizer = torch.load(process_path)
+            train_x, train_y, valid_x, valid_y, test_x, test_y, normalizer = torch.load(process_path, weights_only=False)
         else:
             print(f'Processing {data_key} data from HDF5...')
             # 从HDF5文件读取数据

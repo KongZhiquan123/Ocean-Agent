@@ -1,7 +1,9 @@
 from config import parser
-from utils.helper import set_up_logger, set_seed, set_device, load_config, get_dir_path, save_config
+from utils.helper import set_up_logger, set_seed, load_config, save_config
 from trainers import _trainer_dict
-
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 def main():
     args = parser.parse_args()

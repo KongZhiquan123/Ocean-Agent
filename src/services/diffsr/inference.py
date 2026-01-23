@@ -10,8 +10,6 @@ import os
 import sys
 from pathlib import Path
 
-import torch
-
 # Add DiffSR root to path
 diffsr_root = Path(__file__).parent
 sys.path.insert(0, str(diffsr_root))
@@ -181,7 +179,7 @@ def main():
             output_path=str(report_path)
         )
 
-        print(f"✅ Report generated: {report_path}\n")
+        print(f"✅ Report generated: {str(report_path)}\n")
     except Exception as e:
         print(f"⚠️  Warning: Could not generate report: {e}")
         import traceback

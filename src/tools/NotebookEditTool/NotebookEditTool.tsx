@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from 'fs'
 import { Box, Text } from 'ink'
 import { extname, isAbsolute, relative, resolve } from 'path'
-import * as React from 'react'
 import { z } from 'zod'
 import { FallbackToolUseRejectedMessage } from '@components/FallbackToolUseRejectedMessage'
 import { HighlightedCode } from '@components/HighlightedCode'

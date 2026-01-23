@@ -1,4 +1,4 @@
-import { getAllTools } from './dist/api.bundle.js'
+import { getAllTools } from './dist/tools.js'
 
 const tools = getAllTools()
 

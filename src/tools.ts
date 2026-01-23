@@ -20,6 +20,7 @@ import { WebSearchTool } from './tools/WebSearchTool/WebSearchTool'
 import { URLFetcherTool } from './tools/URLFetcherTool/URLFetcherTool'
 import { getMCPTools } from './services/mcpClient'
 import { memoize } from 'lodash-es'
+import { OceanPreprocessPipelineTool } from './tools/OceanPreprocessPipelineTool/OceanPreprocessPipelineTool'
 import { TimeSeriesAnalysisTool } from './tools/TimeSeriesAnalysisTool/TimeSeriesAnalysisTool'
 import { GeoSpatialPlotTool } from './tools/GeoSpatialPlotTool/GeoSpatialPlotTool'
 import { StandardChartTool } from './tools/StandardChartTool/StandardChartTool'
@@ -55,6 +56,7 @@ export const getAllTools = (): Tool[] => {
     TodoWriteTool as unknown as Tool,
     WebSearchTool as unknown as Tool,
     URLFetcherTool as unknown as Tool,
+    OceanPreprocessPipelineTool as unknown as Tool,
     TimeSeriesAnalysisTool as unknown as Tool,
     GeoSpatialPlotTool as unknown as Tool,
     StandardChartTool as unknown as Tool,

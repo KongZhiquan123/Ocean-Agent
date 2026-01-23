@@ -168,15 +168,7 @@ export const DiffSRForecastorTool = {
 				content: createAssistantMessage(`✓ Output directory: ${outputDir}\n\n`)
 			}
 
-			// Build inference command
-			const isWindows = process.platform === 'win32'
-			let inferenceCommand: string
-
-			if (isWindows) {
-				inferenceCommand = `cmd /c "cd /d "${diffsr_path}" && "${python_path}" inference.py --model_dir "${modelDir}" --forecastor_type ${params.forecastor_type} --output_dir "${outputDir}" --split ${params.split}"`
-			} else {
-				inferenceCommand = `cd "${diffsr_path}" && "${python_path}" inference.py --model_dir "${modelDir}" --forecastor_type ${params.forecastor_type} --output_dir "${outputDir}" --split ${params.split}`
-			}
+			const inferenceCommand = `"${python_path}" "${inferenceScript}" --model_dir "${modelDir}" --forecastor_type ${params.forecastor_type} --output_dir "${outputDir}" --split ${params.split}`
 
 			yield {
 				type: 'progress' as const,
@@ -203,7 +195,7 @@ export const DiffSRForecastorTool = {
 			// Execute inference using spawn for streaming output
 			const { spawn } = await import('child_process')
 
-			const inferenceProcess = spawn(isWindows ? 'cmd' : 'sh', [isWindows ? '/c' : '-c', inferenceCommand], {
+			const inferenceProcess = spawn('sh', ['-c', inferenceCommand], {
 				cwd: diffsr_path,
 				stdio: ['ignore', 'pipe', 'pipe'],
 				env: {
@@ -269,7 +261,7 @@ export const DiffSRForecastorTool = {
 
 			// Check exit code
 			if (exitCode !== 0) {
-				throw new Error(`Inference process exited with code ${exitCode}`)
+				throw new Error(`Inference failed with error ${allStderr || 'Unknown error'}`)
 			}
 
 			// Read metrics.json

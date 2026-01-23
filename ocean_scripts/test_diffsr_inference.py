@@ -9,14 +9,13 @@ import sys
 import yaml
 import json
 import shutil
-import numpy as np
 import torch
 from pathlib import Path
 from datetime import datetime
 
 # Add DiffSR to path to import normalizer
 script_dir = Path(__file__).parent
-sys.path.insert(0, str(script_dir / 'src' / 'services' / 'diffsr'))
+sys.path.insert(0, str((script_dir / '..' / 'src' / 'services' / 'diffsr').resolve()))
 
 # 简单的归一化器（用于备用）
 class SimpleNormalizer:
@@ -122,7 +121,7 @@ def create_test_config(data_path, output_dir, model_type='FNO2d', diffsr_path=No
 
     # 设置日志目录（在 diffsr/logs 下）
     if diffsr_path is None:
-        diffsr_path = Path(__file__).parent / 'src' / 'services' / 'diffsr'
+        diffsr_path = (Path(__file__).parent / '..' / 'src' / 'services' / 'diffsr').resolve()
     log_dir = str(Path(diffsr_path) / 'logs')
 
     config = {
@@ -139,7 +138,7 @@ def create_test_config(data_path, output_dir, model_type='FNO2d', diffsr_path=No
             'upsample_factor': [2, 2],  # For super-resolution
         },
         'data': {
-            'name': 'ocean',
+            'name': 'Ocean',
             'data_path': str(data_path),  # Changed from 'path' to 'data_path'
             'data_key': 'uo_data',  # Added: required by Ocean dataset
             'shape': [64, 64],
@@ -354,8 +353,8 @@ def main():
 
     # 配置
     script_dir = Path(__file__).parent
-    diffsr_path = script_dir / 'src' / 'services' / 'diffsr'
-    test_dir = script_dir / 'test_diffsr_output'
+    diffsr_path = (script_dir / '..' / 'src' / 'services' / 'diffsr').resolve()
+    test_dir = (script_dir / '..' / 'test_diffsr_output').resolve()
 
     # 获取 Python 路径
     python_path = sys.executable

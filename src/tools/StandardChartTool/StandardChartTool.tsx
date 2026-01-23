@@ -182,13 +182,13 @@ export const StandardChartTool = {
         <Box flexDirection="column">
           <Box flexDirection="row">
             <Text>&nbsp;&nbsp;⎿ &nbsp;</Text>
-            <Text color={getTheme().successText}>
+            <Text color={getTheme().success}>
               Created {data.metadata.chartType} chart with {data.metadata.dataPoints} points
             </Text>
           </Box>
 
           <Box flexDirection="row" marginLeft={5}>
-            <Text color={getTheme().infoText}>Saved to: {relative(getCwd(), data.outputFile)}</Text>
+            <Text color={getTheme().primary}>Saved to: {relative(getCwd(), data.outputFile)}</Text>
           </Box>
 
           {data.metadata.seriesCount > 1 && (
@@ -200,7 +200,7 @@ export const StandardChartTool = {
           {data.warnings && data.warnings.length > 0 && (
             <Box flexDirection="column" marginLeft={5}>
               {data.warnings.slice(0, 2).map((warning, idx) => (
-                <Text key={idx} color={getTheme().warningText}>
+                <Text key={idx} color={getTheme().warning}>
                   ⚠ {warning}
                 </Text>
               ))}
