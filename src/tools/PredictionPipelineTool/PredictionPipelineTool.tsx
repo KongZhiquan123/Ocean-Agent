@@ -1,5 +1,4 @@
 import { Box, Text } from 'ink'
-import React from 'react'
 import { z } from 'zod'
 import { Tool } from '../../Tool'
 import { exec } from 'child_process'
@@ -238,6 +237,12 @@ export const PredictionPipelineTool = {
 		const start = Date.now()
 
 		try {
+			// Resolve absolute paths
+			for (const key of ['config_path', 'model_path', 'output_dir'] as const) {
+				if (params[key]) {
+					params[key] = path.isAbsolute(params[key]) ? path.resolve(params[key]) : path.resolve(getCwd(), params[key])
+				}
+			}
 			// Use embedded Prediction from Kode
 			yield {
 				type: 'progress' as const,
@@ -356,7 +361,7 @@ print(json.dumps(configs, indent=2))
 					const { stdout, stderr } = await execAsync(trainCommand, {
 						maxBuffer: 200 * 1024 * 1024, // 200MB buffer
 						timeout: 24 * 60 * 60 * 1000, // 24 hours timeout
-						cwd: prediction_path,
+						cwd: getCwd(),
 					})
 
 					yield {
@@ -482,7 +487,7 @@ print(json.dumps(configs, indent=2))
 					const { stdout, stderr } = await execAsync(testCommand, {
 						maxBuffer: 200 * 1024 * 1024,
 						timeout: 6 * 60 * 60 * 1000, // 6 hours
-						cwd: prediction_path,
+						cwd: getCwd(),
 					})
 
 					yield {

@@ -1,5 +1,4 @@
 import { Box, Text } from 'ink'
-import React from 'react'
 import { z } from 'zod'
 import { Tool } from '../../Tool'
 import { exec } from 'child_process'
@@ -216,8 +215,14 @@ export const DiffSRPipelineTool = {
 	},
 	async *call(params: Input, { abortController }: { abortController: AbortController }) {
 		const start = Date.now()
-
 		try {
+			// Resolve absolute paths
+			for (const key of ['config_path', 'model_path', 'input_data', 'output_dir'] as const) {
+				if (params[key]) {
+					params[key] = path.isAbsolute(params[key]) ? path.resolve(params[key]) : path.resolve(getCwd(), params[key])
+				}
+			}	
+
 			// Use embedded DiffSR from Kode
 			yield {
 				type: 'progress' as const,
@@ -298,7 +303,7 @@ print(json.dumps(configs, indent=2))
 				// Verify files exist
 				const fs = await import('fs/promises')
 				const mainPyPath = path.join(diffsr_path, 'main.py')
-				
+
 				try {
 					await fs.access(mainPyPath)
 					await fs.access(params.config_path)
@@ -336,7 +341,7 @@ print(json.dumps(configs, indent=2))
 					const { spawn } = await import('child_process')
 
 					const trainProcess = spawn('sh', ['-c', trainCommand], {
-						cwd: diffsr_path,
+						cwd: getCwd(),
 						stdio: ['ignore', 'pipe', 'pipe'],
 						env: {
 							...process.env,
@@ -434,11 +439,6 @@ print(json.dumps(configs, indent=2))
 						const reportPath = params.output_dir
 							? path.join(params.output_dir, 'training_report.md')
 							: './training_report.md'
-
-						const reportGenScript = path.join(diffsr_path, 'report_generator.py')
-
-						// Extract training metrics from output
-						const reportCommand = `"${python_path}" "${reportGenScript}" train "${params.config_path}" "${reportPath}"`
 
 						yield {
 							type: 'progress' as const,
@@ -587,7 +587,7 @@ print(json.dumps(configs, indent=2))
 				const { spawn } = await import('child_process')
 
 				const inferenceProcess = spawn('sh', ['-c', inferenceCommand], {
-					cwd: diffsr_path,
+					cwd: getCwd(),
 					stdio: ['ignore', 'pipe', 'pipe'],
 					env: {
 						...process.env,

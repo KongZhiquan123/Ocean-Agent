@@ -1,5 +1,4 @@
 import { Box, Text } from 'ink'
-import React from 'react'
 import { z } from 'zod'
 import { Tool } from '../../Tool.js'
 import path from 'path'
@@ -119,6 +118,12 @@ export const DiffSRForecastorTool = {
 		const start = Date.now()
 
 		try {
+			// Resolve absolute paths
+			for (const key of ['model_dir', 'output_dir'] as const) {
+				if (params[key]) {
+					params[key] = path.isAbsolute(params[key]) ? path.resolve(params[key]) : path.resolve(getCwd(), params[key])
+				}
+			}
 			yield {
 				type: 'progress' as const,
 				content: createAssistantMessage('🔧 Initializing DiffSR inference...\n')
@@ -196,7 +201,7 @@ export const DiffSRForecastorTool = {
 			const { spawn } = await import('child_process')
 
 			const inferenceProcess = spawn('sh', ['-c', inferenceCommand], {
-				cwd: diffsr_path,
+				cwd: getCwd(),
 				stdio: ['ignore', 'pipe', 'pipe'],
 				env: {
 					...process.env,

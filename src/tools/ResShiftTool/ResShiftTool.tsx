@@ -1,5 +1,4 @@
 import { Box, Text } from 'ink'
-import React from 'react'
 import { z } from 'zod'
 import { Tool } from '../../Tool'
 import { exec } from 'child_process'
@@ -98,6 +97,14 @@ export const ResShiftTool = {
     const start = Date.now()
 
     try {
+      // Resolve absolute paths
+      for (const key of ['input_path', 'output_path', 'model_path'] as const) {
+        if (params[key]) {
+          params[key] = path.isAbsolute(params[key])
+            ? path.resolve(params[key])
+            : path.resolve(getCwd(), params[key])
+        }
+      }
       const scriptContent = `
 import os
 import sys
@@ -172,6 +179,7 @@ except Exception as e:
 
       const { stdout, stderr } = await execAsync(`python "${tempScript}"`, {
         maxBuffer: 10 * 1024 * 1024,
+        cwd: getCwd(),
       })
 
       await fs.unlink(tempScript)

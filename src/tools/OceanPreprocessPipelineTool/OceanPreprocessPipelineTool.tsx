@@ -138,6 +138,15 @@ export const OceanPreprocessPipelineTool = {
     const cwd = getCwd()
 
     try {
+      // Resolve absolute paths
+      for (const key of ['input_dir', 'output_dir'] as const) {
+        if (input[key]) {
+          input[key] = path.isAbsolute(input[key])
+            ? path.resolve(input[key])
+            : path.resolve(getCwd(), input[key])
+        }
+      }
+
       if (!existsSync(input_dir)) {
         throw new Error(`Input directory does not exist: ${input_dir}`)
       }
@@ -154,7 +163,7 @@ export const OceanPreprocessPipelineTool = {
       const pythonCmd = await OceanDepsManager.findPython()
       const scriptPath = path.join(await OceanDepsManager.ensurePreprocessing(), 'main.py')
 
-      // 因为python脚本中使用了相对导入，所以不要求工作目录必须是脚本所在目录(即不需要cd命令)，但需要确保脚本路径正确
+      // 因为python默认行为，所以我们不要求工作目录必须是脚本所在目录(即不需要cd命令)，但需要确保脚本路径正确
       const executeCommand = `${pythonCmd} ${scriptPath} ${use_cnn_validation ? '' : '--simple'}`.trim()
       const exitCode = await new Promise<number | null>((resolve, reject) => {
         const proc = spawn('sh', ['-c', executeCommand], {
