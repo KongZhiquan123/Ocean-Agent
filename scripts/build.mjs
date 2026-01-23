@@ -260,14 +260,6 @@ import('./entrypoints/cli.js').catch(err => {
 });
 `)
 
-  // Copy yoga.wasm alongside outputs
-  try {
-    cpSync('yoga.wasm', join(OUT_DIR, 'yoga.wasm'))
-    console.log('✅ yoga.wasm copied to dist')
-  } catch (err) {
-    console.warn('⚠️  Could not copy yoga.wasm:', err.message)
-  }
-
   // Copy DiffSR-main to dist/services/diffsr
   const diffSRSource = join(SRC_DIR, 'services', 'diffsr')
   const predictionSource = join(SRC_DIR, 'services', 'prediction')

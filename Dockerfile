@@ -35,6 +35,12 @@ RUN npm install -g pnpm && \
     pnpm config set registry https://registry.npmmirror.com/ && \
     pnpm install
 
+
+# Copy Python requirements
+COPY requirements.txt ./
+# Install Python dependencies
+RUN pip install -r requirements.txt
+
 # Copy source code
 COPY . .
 
