@@ -23,6 +23,7 @@ import { memoize } from 'lodash-es'
 import { TimeSeriesAnalysisTool } from './tools/TimeSeriesAnalysisTool/TimeSeriesAnalysisTool'
 import { GeoSpatialPlotTool } from './tools/GeoSpatialPlotTool/GeoSpatialPlotTool'
 import { StandardChartTool } from './tools/StandardChartTool/StandardChartTool'
+import { OceanVisualizationTool } from './tools/OceanVisualizationTool/OceanVisualizationTool'
 // ResShift super-resolution tools (DiffSR integration)
 import { ResShiftTool } from './tools/ResShiftTool/ResShiftTool'
 import { ResShiftTrainingTool } from './tools/ResShiftTrainingTool/ResShiftTrainingTool'
@@ -58,6 +59,7 @@ export const getAllTools = (): Tool[] => {
     TimeSeriesAnalysisTool as unknown as Tool,
     GeoSpatialPlotTool as unknown as Tool,
     StandardChartTool as unknown as Tool,
+    OceanVisualizationTool as unknown as Tool,
     // ResShift super-resolution tools
     ResShiftTool as unknown as Tool,
     ResShiftTrainingTool as unknown as Tool,
