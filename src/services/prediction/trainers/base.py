@@ -316,18 +316,18 @@ class BaseTrainer:
             metrics_data = {
                'best_epoch': best_epoch,
                'best_valid_loss': best_metrics['valid_loss'] if best_metrics else None,
-                'final_valid_loss': valid_loss_record.to_dict()['valid_loss'],
-                  'final_test_loss': test_loss_record.to_dict()['test_loss'],
-           }
+               'final_valid_loss': valid_loss_record.to_dict()['valid_loss'],
+               'final_test_loss': test_loss_record.to_dict()['test_loss'],
+            }
 
-           # 生成报告
-           generator = PredictionReportGenerator()
+            # 生成报告
+            generator = PredictionReportGenerator()
             report_path = generator.generate_train_report(
-                config=config_data,
+               config=config_data,
                metrics=metrics_data,
-                output_path=os.path.join(self.saving_path, 'training_report.md')
+               output_path=os.path.join(self.saving_path, 'training_report.md')
             )
-           self.logger.info("Training report generated: {}".format(report_path))
+            self.logger.info("Training report generated: {}".format(report_path))
 
         except Exception as e:
             self.logger.error("Failed to generate training report: {}".format(e))

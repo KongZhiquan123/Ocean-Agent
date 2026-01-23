@@ -10,8 +10,6 @@ import os
 import sys
 from pathlib import Path
 
-import torch
-
 # Add DiffSR root to path
 diffsr_root = Path(__file__).parent
 sys.path.insert(0, str(diffsr_root))

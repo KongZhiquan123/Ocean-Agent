@@ -281,8 +281,8 @@ configs = []
 for root, dirs, files in os.walk(config_dir):
 	for file in files:
 		if file.endswith('.yaml'):
-			rel_path = os.path.relpath(os.path.join(root, file), config_dir)
-			configs.append(rel_path)
+			abs_path = os.path.join(root, file)
+			configs.append(abs_path)
 
 print(json.dumps(configs, indent=2))
 `
@@ -331,15 +331,8 @@ print(json.dumps(configs, indent=2))
 					content: createAssistantMessage(`✓ Prediction main.py: ${mainPyPath}\n✓ Config: ${params.config_path}\n✓ Python: ${python_path}\n\n`)
 				}
 
-				// Build command to run training in Prediction directory
-				const isWindows = process.platform === 'win32'
-				let trainCommand: string
 
-				if (isWindows) {
-					trainCommand = `cmd /c "cd /d "${prediction_path}" && "${python_path}" main.py --mode train --config "${params.config_path}""`
-				} else {
-					trainCommand = `cd "${prediction_path}" && "${python_path}" main.py --mode train --config "${params.config_path}"`
-				}
+				const trainCommand = `"${python_path}" "${mainPyPath}" --mode train --config "${params.config_path}"`
 
 				yield {
 					type: 'progress' as const,
@@ -478,14 +471,7 @@ print(json.dumps(configs, indent=2))
 					throw new Error(`File not found: ${e}`)
 				}
 
-				const isWindows = process.platform === 'win32'
-				let testCommand: string
-
-				if (isWindows) {
-					testCommand = `cmd /c "cd /d "${prediction_path}" && "${python_path}" main.py --mode test --config "${params.config_path}" --model_path "${params.model_path}""`
-				} else {
-					testCommand = `cd "${prediction_path}" && "${python_path}" main.py --mode test --config "${params.config_path}" --model_path "${params.model_path}"`
-				}
+				const testCommand = `"${python_path}" "${mainPyPath}" --mode test --config "${params.config_path}" --model_path "${params.model_path}"`
 
 				yield {
 					type: 'progress' as const,

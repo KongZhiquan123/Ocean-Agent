@@ -2,11 +2,11 @@
 
 ## 🚀 快速部署步骤
 
-### 1. 解压安装包
+### 1. 克隆代码库
 
 ```bash
-# 解压到当前目录
-tar -xzf kode_v1.1.25.tar.gz
+# clone代码库
+git clone https://github.com/KongZhiquan123/Ocean-Agent
 
 # 进入kode目录
 cd kode
@@ -37,6 +37,8 @@ npm run build
 构建成功后会看到：
 ```
 ✅ DiffSR-main copied to dist/services/diffsr
+✅ Prediction service copied to dist/services/prediction
+✅ Preprocessing service copied to dist/services/preprocessing
 ✅ cli.js made executable
 ✅ Build completed for cross-platform compatibility!
 ```
