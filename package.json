@@ -109,6 +109,7 @@
     "bun-types": "latest",
     "esbuild": "^0.25.9",
     "prettier": "^3.6.2",
+    "react-devtools-core": "7.0.1",
     "typescript": "^5.9.2"
   },
   "private": true
