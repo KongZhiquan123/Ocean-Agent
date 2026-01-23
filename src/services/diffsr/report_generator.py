@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
-
 """
-
 DiffSR 报告生成器
-
 自动生成符合模板格式的训练报告和数据处理报告
-
 """
 
 import os
-
 import json
-
 from pathlib import Path
-
 from datetime import datetime
-
 from typing import Dict, Any, List, Optional
 
 
@@ -24,19 +16,12 @@ class DiffSRReportGenerator:
 
     def __init__(self, template_dir: Optional[str] = None):
         """
-
         初始化报告生成器
 
-
-
         Args:
-
             template_dir: 模板目录路径，默认为当前目录下的 report_templates
-
         """
-
         if template_dir is None:
-
             current_dir = Path(__file__).parent
 
             template_dir = current_dir / "report_templates"
@@ -51,27 +36,16 @@ class DiffSRReportGenerator:
         self, config: Dict[str, Any], metrics: Dict[str, Any], output_path: str
     ) -> str:
         """
-
         生成训练报告
 
-
-
         Args:
-
             config: 训练配置信息
-
             metrics: 训练指标和结果
-
             output_path: 报告输出路径
 
-
-
         Returns:
-
             生成的报告路径
-
         """
-
         # 读取模板
 
         with open(self.train_template, "r", encoding="utf-8") as f:
@@ -91,17 +65,11 @@ class DiffSRReportGenerator:
         train_duration = metrics.get("total_time", "N/A")
 
         if isinstance(train_duration, (int, float)):
-
             hours = int(train_duration // 3600)
-
             minutes = int((train_duration % 3600) // 60)
-
             seconds = int(train_duration % 60)
-
             train_duration_str = f"{hours}小时{minutes}分{seconds}秒"
-
         else:
-
             train_duration_str = str(train_duration)
 
         # 填充基本信息
@@ -129,7 +97,6 @@ class DiffSRReportGenerator:
         report = report.replace(
             "- ✅ **模型训练**: ", f"- ✅ **模型训练**: 成功完成 {best_epoch} 个 epochs"
         )
-
         report = report.replace(
             "- ✅ **测试性能**:",
             (
@@ -138,18 +105,21 @@ class DiffSRReportGenerator:
                 else "- ✅ **测试性能**: PSNR N/A"
             ),
         )
-
         report = report.replace(
             "- ✅ **模型检查点**: ", f"- ✅ **模型检查点**: {model_path}"
         )
-
         report = report.replace(
             "- ✅ **训练稳定性**: ",
             f"- ✅ **训练稳定性**: 训练过程稳定，损失函数收敛良好",
         )
 
         # 填充关键指标
-
+        # check if num_params is a number before formatting
+        if isinstance(num_params, (int, float)):
+             param_str = f"{num_params:,}"
+        else:
+             param_str = str(num_params)
+             
         report = report.replace(
             "- **参数量**: ",
             (
@@ -158,7 +128,6 @@ class DiffSRReportGenerator:
                 else f"- **参数量**: {num_params}"
             ),
         )
-
         report = report.replace(
             "- **训练模式**: ",
             f'- **训练模式**: {"分布式" if config.get("train", {}).get("distribute", False) else "单GPU"}',
@@ -175,19 +144,16 @@ class DiffSRReportGenerator:
         optimize_config = config.get("optimize", {})
 
         # 1.1 模型结构表格
-
         model_table = self._generate_model_config_table(model_config)
 
         report = report.replace("| **模型名称** | ... |", model_table)
 
         # 1.2 数据配置表格
-
         data_table = self._generate_data_config_table(data_config)
 
         report = report.replace("| **数据集** | ... |", data_table)
 
         # 1.3 训练超参数表格
-
         train_table = self._generate_train_config_table(train_config, optimize_config)
 
         report = report.replace("| **总Epochs** | ... |", train_table)
@@ -203,9 +169,7 @@ class DiffSRReportGenerator:
         train_history = metrics.get("train_history", [])
 
         if train_history:
-
             loss_table = self._generate_loss_curve_table(train_history)
-
             report = report.replace(
                 "#### 损失下降趋势\n\n", f"#### 损失下降趋势\n\n{loss_table}\n"
             )
@@ -215,9 +179,7 @@ class DiffSRReportGenerator:
         valid_history = metrics.get("valid_history", [])
 
         if valid_history:
-
             valid_table = self._generate_validation_table(valid_history)
-
             report = report.replace(
                 "| Epoch | Valid Loss |Valid PSNR|Valid Relative L2|... | 改进率 |",
                 valid_table,
@@ -228,13 +190,11 @@ class DiffSRReportGenerator:
         test_metrics = metrics.get("test_metrics", {})
 
         test_table = self._generate_test_metrics_table(test_metrics)
-
         # 找到 "### 3.2 测试集指标" 下的表格并替换
 
         test_section_marker = "### 3.2 测试集指标 (最终评估)\n\n| 指标 | 值 | 说明 |"
 
         if test_section_marker in report:
-
             report = report.replace(
                 "| 指标 | 值 | 说明 |\n|------|-----|------|", test_table
             )
@@ -244,21 +204,17 @@ class DiffSRReportGenerator:
         checkpoints = metrics.get("checkpoints", [])
 
         checkpoint_table = self._generate_checkpoint_table(checkpoints)
-
         report = report.replace(
             "| 迭代数 | 文件名 | 大小 | 保存时间 |", checkpoint_table
         )
 
         # 8.2 关键数据总结
-
         summary_table = self._generate_summary_table(config, metrics)
 
         report = report.replace("| 训练样本 |...|", summary_table)
 
         # 写入报告
-
         output_path = Path(output_path)
-
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(output_path, "w", encoding="utf-8") as f:
@@ -266,7 +222,6 @@ class DiffSRReportGenerator:
             f.write(report)
 
         print(f"✅ 训练报告已生成: {output_path}")
-
         return str(output_path)
 
     def generate_data_report(
@@ -276,27 +231,16 @@ class DiffSRReportGenerator:
         output_path: str,
     ) -> str:
         """
-
         生成数据处理报告
 
-
-
         Args:
-
             data_info: 数据信息
-
             processing_info: 处理过程信息
-
             output_path: 报告输出路径
 
-
-
         Returns:
-
             生成的报告路径
-
         """
-
         # 读取模板
 
         with open(self.data_template, "r", encoding="utf-8") as f:
@@ -333,12 +277,10 @@ class DiffSRReportGenerator:
             "- ✅ **原始数据转化过程**: ",
             f'- ✅ **原始数据转化过程**: 从 {data_info.get("source_format", "NetCDF")} 转换为训练格式',
         )
-
         report = report.replace(
             "- ✅ **有效数据**: ",
             f"- ✅ **有效数据**: {valid_samples}/{total_samples} 样本（有效率 {valid_samples/total_samples*100:.2f}%）",
         )
-
         report = report.replace(
             "- ✅ **数据划分**: 训练集(xxx%) | 验证集(xxx%) | 测试集(xxx%)",
             f"- ✅ **数据划分**: 训练集({train_ratio*100:.0f}%) | 验证集({valid_ratio*100:.0f}%) | 测试集({test_ratio*100:.0f}%)",
@@ -389,33 +331,21 @@ class DiffSRReportGenerator:
         test_samples = output_info.get("test_samples", 0)
 
         train_section = f"""#### 训练集
-
 - **样本数**: {train_samples}
-
 - **文件路径**: {output_info.get('train_path', 'N/A')}
-
 - **数据形状**: {output_info.get('train_shape', 'N/A')}
-
 """
 
         valid_section = f"""#### 验证集
-
 - **样本数**: {valid_samples}
-
 - **文件路径**: {output_info.get('valid_path', 'N/A')}
-
 - **数据形状**: {output_info.get('valid_shape', 'N/A')}
-
 """
 
         test_section = f"""#### 测试集
-
 - **样本数**: {test_samples}
-
 - **文件路径**: {output_info.get('test_path', 'N/A')}
-
 - **数据形状**: {output_info.get('test_shape', 'N/A')}
-
 """
 
         report = report.replace("#### 训练集\n\n", train_section)
@@ -433,15 +363,12 @@ class DiffSRReportGenerator:
         report = report.replace("| 数据加载 | ...| ...| ... |", perf_table)
 
         # 填充文件路径汇总
-
         paths_table = self._generate_paths_table(data_info, processing_info)
 
         report = report.replace("| 原始数据|  |", paths_table)
 
         # 写入报告
-
         output_path = Path(output_path)
-
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(output_path, "w", encoding="utf-8") as f:
@@ -449,7 +376,6 @@ class DiffSRReportGenerator:
             f.write(report)
 
         print(f"✅ 数据处理报告已生成: {output_path}")
-
         return str(output_path)
 
     # 辅助函数：生成各种表格
@@ -468,7 +394,7 @@ class DiffSRReportGenerator:
         rows = [
             f"| **模型名称** | {config.get('name', 'N/A')} |",
             f"| **模型类型** | {config.get('type', 'N/A')} |",
-            f"| **参数量** | {num_params_str} |",  # <--- 修改了这里
+            f"| **参数量** | {num_params_str} |",
             f"| **输入/输出通道** | {config.get('in_dim', 'N/A')} / {config.get('out_dim', 'N/A')} |",
             f"| **模型通道数** | {config.get('width', 'N/A')} |",
         ]
@@ -476,6 +402,9 @@ class DiffSRReportGenerator:
 
     def _generate_data_config_table(self, config: Dict[str, Any]) -> str:
         """生成数据配置表格"""
+        train_ratio = config.get('train_ratio', 'N/A')
+        valid_ratio = config.get('valid_ratio', 'N/A')
+        test_ratio = config.get('test_ratio', 'N/A')
 
         rows = [
             f"| **数据集** | {config.get('name', 'N/A')} |",
@@ -490,7 +419,6 @@ class DiffSRReportGenerator:
 
     def _generate_train_config_table(self, train_config: Dict, opt_config: Dict) -> str:
         """生成训练配置表格"""
-
         rows = [
             f"| **总Epochs** | {train_config.get('epochs', 'N/A')} |",
             f"| **批次大小** | {train_config.get('batch_size', 'N/A')} |",
@@ -505,7 +433,6 @@ class DiffSRReportGenerator:
 
     def _generate_gpu_config_table(self, gpu_info: Dict[str, Any]) -> str:
         """生成 GPU 配置表格"""
-
         rows = [
             f"| **GPU** | {gpu_info.get('name', 'N/A')} |",
             f"| **显存** | {gpu_info.get('memory', 'N/A')} GB |",
@@ -517,19 +444,13 @@ class DiffSRReportGenerator:
 
     def _generate_loss_curve_table(self, history: List[Dict]) -> str:
         """生成损失曲线表格"""
-
         if not history:
-
             return "暂无数据"
 
         # 只显示关键 epochs
-
         key_epochs = []
-
         for i, h in enumerate(history):
-
             if i == 0 or i == len(history) - 1 or i % max(len(history) // 10, 1) == 0:
-
                 key_epochs.append(h)
 
         rows = [
@@ -551,9 +472,7 @@ class DiffSRReportGenerator:
 
     def _generate_validation_table(self, history: List[Dict]) -> str:
         """生成验证集性能表格"""
-
         if not history:
-
             return "| Epoch | Valid Loss | Valid PSNR | Valid L2 | 改进率 |\n|-------|------------|------------|----------|--------|"
 
         rows = [
@@ -562,7 +481,6 @@ class DiffSRReportGenerator:
         ]
 
         prev_loss = None
-
         for h in history[-10:]:  # 只显示最后10个
 
             epoch = h.get("epoch", "N/A")
@@ -574,12 +492,13 @@ class DiffSRReportGenerator:
             l2 = h.get("valid_l2", 0)
 
             improvement = ""
-
-            if prev_loss is not None and isinstance(loss, (int, float)):
-
+            if prev_loss is not None and isinstance(loss, (int, float)) and isinstance(prev_loss, (int, float)) and prev_loss != 0:
                 improvement = f"{(prev_loss - loss) / prev_loss * 100:.2f}%"
-
             prev_loss = loss
+            
+            loss_str = f"{loss:.6f}" if isinstance(loss, (int, float)) else str(loss)
+            psnr_str = f"{psnr:.4f}" if isinstance(psnr, (int, float)) else str(psnr)
+            l2_str = f"{l2:.6f}" if isinstance(l2, (int, float)) else str(l2)
 
             rows.append(
                 f"| {epoch} | {loss:.6f} | {psnr:.4f} | {l2:.6f} | {improvement} |"
@@ -589,6 +508,10 @@ class DiffSRReportGenerator:
 
     def _generate_test_metrics_table(self, metrics: Dict[str, Any]) -> str:
         """生成测试集指标表格"""
+        psnr = metrics.get('psnr', 'N/A')
+        ssim = metrics.get('ssim', 'N/A')
+        rel_l2 = metrics.get('rel_l2', 'N/A')
+        mse = metrics.get('mse', 'N/A')
 
         rows = [
             "| 指标 | 值 | 说明 |",
@@ -603,9 +526,7 @@ class DiffSRReportGenerator:
 
     def _generate_checkpoint_table(self, checkpoints: List[Dict]) -> str:
         """生成检查点表格"""
-
         if not checkpoints:
-
             return "| 迭代数 | 文件名 | 大小 | 保存时间 |\n|--------|--------|------|----------|"
 
         rows = [
@@ -649,9 +570,7 @@ class DiffSRReportGenerator:
 
     def _generate_data_stats_table(self, stats: Dict[str, Any]) -> str:
         """生成数据统计表格"""
-
         if not stats:
-
             return "| 变量名 | NaN比例 | 最小值 | 最大值 | 均值 | 标准差 |\n|--------|---------|--------|--------|------|--------|"
 
         rows = [
@@ -679,7 +598,6 @@ class DiffSRReportGenerator:
 
     def _generate_performance_table(self, perf: Dict[str, Any]) -> str:
         """生成性能表格"""
-
         rows = [
             "| 阶段 | 输入大小 | 输出大小 | 耗时 | 吞吐量 |",
             "|------|---------|---------|------|--------|",
@@ -712,27 +630,15 @@ def generate_train_report_from_file(
     config_file: str, metrics_file: str, output_path: str
 ) -> str:
     """
-
     从文件生成训练报告的便捷函数
 
-
-
     Args:
-
         config_file: 配置JSON文件路径
-
         metrics_file: 指标JSON文件路径
-
         output_path: 输出报告路径
 
-
-
     Returns:
-
         生成的报告路径
-
-    """
-
     """
         生成训练报告，并自动保存 config.json 和 metrics.json 以便后续复用
         """
@@ -767,7 +673,6 @@ def generate_train_report_from_file(
         metrics = json.load(f)
 
     generator = DiffSRReportGenerator()
-
     return generator.generate_train_report(config, metrics, output_path)
 
 
@@ -775,25 +680,15 @@ def generate_data_report_from_file(
     data_info_file: str, processing_info_file: str, output_path: str
 ) -> str:
     """
-
     从文件生成数据处理报告的便捷函数
 
-
-
     Args:
-
         data_info_file: 数据信息JSON文件路径
-
         processing_info_file: 处理信息JSON文件路径
-
         output_path: 输出报告路径
 
-
-
     Returns:
-
         生成的报告路径
-
     """
 
     with open(data_info_file, "r") as f:
@@ -805,7 +700,6 @@ def generate_data_report_from_file(
         processing_info = json.load(f)
 
     generator = DiffSRReportGenerator()
-
     return generator.generate_data_report(data_info, processing_info, output_path)
 
 
@@ -814,7 +708,6 @@ if __name__ == "__main__":
     import sys
 
     if len(sys.argv) < 4:
-
         print("用法:")
 
         print(
@@ -836,9 +729,7 @@ if __name__ == "__main__":
     elif report_type == "data":
 
         generate_data_report_from_file(sys.argv[2], sys.argv[3], sys.argv[4])
-
     else:
-
         print(f"未知的报告类型: {report_type}")
 
         sys.exit(1)

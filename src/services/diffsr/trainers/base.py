@@ -2,8 +2,10 @@ import os
 import torch
 import wandb
 import logging
+import time  # ✅ 新增：用于计时
+from datetime import datetime  # ✅ 新增：用于时间戳
 
-
+import json  
 import torch.distributed as dist
 from torch import nn
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -77,8 +79,12 @@ class BaseTrainer:
         self.loss_fn = self.build_loss()
         self.evaluator = self.build_evaluator()
 
+        # ✅ 计算并存储参数量，防止报告生成器报错
+        num_params = sum(p.numel() for p in self.model.parameters())
+        self.args['model']['num_params'] = num_params 
         self.main_log("Model: {}".format(self.model))
-        self.main_log("Model parameters: {:.2f}M".format(sum(p.numel() for p in self.model.parameters()) / 1e6))
+        self.main_log("Model parameters: {:.2f}M".format(num_params / 1e6))
+        
         self.main_log("Optimizer: {}".format(self.optimizer))
         self.main_log("Scheduler: {}".format(self.scheduler))
 
@@ -307,6 +313,12 @@ class BaseTrainer:
     
     def process(self, **kwargs):
         self.main_log("Start training")
+        start_time = time.time()  # ✅ 开始计时
+
+        # ✅ 初始化历史记录容器
+        train_history = []
+        valid_history = []
+
         best_epoch = 0
         best_metrics = None
         best_path = os.path.join(self.saving_path, "best_model.pth")
@@ -317,6 +329,13 @@ class BaseTrainer:
 
         for epoch in range(self.start_epoch, self.epochs):
             train_loss_record = self.train(epoch)
+            
+            # ✅ 记录训练历史
+            if self.check_main_process():
+                t_metrics = train_loss_record.to_dict()
+                t_metrics['epoch'] = epoch
+                train_history.append(t_metrics)
+
             self.main_log("Epoch {} | {} | lr: {:.4f}".format(epoch, train_loss_record, self.optimizer.param_groups[0]["lr"]))
             if self.check_main_process() and self.wandb:
                 wandb.log(train_loss_record.to_dict())
@@ -329,6 +348,13 @@ class BaseTrainer:
                 valid_loss_record = self.evaluate(split="valid")
                 self.main_log("Epoch {} | {}".format(epoch, valid_loss_record))
                 valid_metrics = valid_loss_record.to_dict()
+                
+                # ✅ 记录验证历史
+                if self.check_main_process():
+                    v_metrics_copy = valid_metrics.copy()
+                    v_metrics_copy['epoch'] = epoch
+                    valid_history.append(v_metrics_copy)
+
                 if self.check_main_process() and self.wandb:
                     wandb.log(valid_loss_record.to_dict())
                 
@@ -376,49 +402,101 @@ class BaseTrainer:
             wandb.run.summary["best_epoch"] = best_epoch
             wandb.run.summary.update(test_loss_record.to_dict())
             wandb.finish()
-        if self.check_main_process():
-          try:
-              import sys
-              from pathlib import Path
-              # 添加 DiffSR 根目录到 sys.path
-              diffsr_root = Path(__file__).parent.parent
-              if str(diffsr_root) not in sys.path:
-                  sys.path.insert(0, str(diffsr_root))
-
-              from report_generator import DiffSRReportGenerator
-
-              # 准备配置数据
-              config_data = {
-                  'model_type': self.model_name,
-                  'epochs': self.epochs,
-                  'batch_size': self.train_loader.batch_size,
-                  'learning_rate': self.optimizer.param_groups[0]['lr'],
-                  'optimizer': self.optimizer.__class__.__name__,
-              }
-
-              # 准备指标数据
-              metrics_data = {
-                  'best_epoch': best_epoch,
-                  'best_valid_loss': best_metrics['valid_loss'] if best_metrics else None,
-                  'final_valid_loss': valid_loss_record.to_dict()['valid_loss'],
-                  'final_test_loss': test_loss_record.to_dict()['test_loss'],
-              }
-
-              # 生成报告
-              generator = DiffSRReportGenerator()
-              report_path = generator.generate_train_report(
-                  config=config_data,
-                  metrics=metrics_data,
-                  output_path=os.path.join(self.saving_path, 'training_report.md')
-              )
-              self.main_log("raining report generated: {}".format(report_path))
-
-          except Exception as e:
-              self.main_log("Failed to generate training report: {}".format(e))
-              import traceback
-              self.main_log(traceback.format_exc())
-
         
+        # ✅ 报告生成部分：构建完整的数据结构
+        if self.check_main_process():
+            try:
+                import sys
+                from pathlib import Path
+                # 添加 DiffSR 根目录到 sys.path
+                diffsr_root = Path(__file__).parent.parent
+                if str(diffsr_root) not in sys.path:
+                    sys.path.insert(0, str(diffsr_root))
+
+                from report_generator import DiffSRReportGenerator
+
+                # 1. 准备配置数据 (直接使用完整的 self.args，它包含了 model, data, train 等所有子字典)
+                config_data = self.args.copy()
+                
+                # 2. 收集 GPU 信息
+                gpu_info = {
+                    'name': torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU',
+                    'memory': round(torch.cuda.get_device_properties(0).total_memory / 1024**3, 2) if torch.cuda.is_available() else 0,
+                    'mode': 'Distributed' if self.dist else 'Single GPU',
+                    'cuda_version': torch.version.cuda if torch.cuda.is_available() else 'N/A'
+                }
+
+                # 3. 处理测试集指标 (移除前缀 'test_' 以匹配报告生成器的期望)
+                raw_test_metrics = test_loss_record.to_dict()
+                clean_test_metrics = {}
+                for k, v in raw_test_metrics.items():
+                    clean_test_metrics[k.replace('test_', '')] = v
+
+                # 4. 扫描检查点文件
+                checkpoints = []
+                if os.path.exists(self.saving_path):
+                     for f in os.listdir(self.saving_path):
+                        if f.endswith('.pth'):
+                            path = os.path.join(self.saving_path, f)
+                            stat = os.stat(path)
+                            # 尝试从文件名解析 epoch
+                            epoch_str = 'N/A'
+                            if 'epoch' in f:
+                                parts = f.split('_')
+                                if parts:
+                                    last_part = parts[-1].split('.')[0]
+                                    if last_part.isdigit():
+                                        epoch_str = last_part
+                            
+                            checkpoints.append({
+                                'epoch': epoch_str,
+                                'filename': f,
+                                'size': f"{stat.st_size / 1024 / 1024:.2f} MB",
+                                'timestamp': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+                            })
+                
+                # 5. 构建完整的指标数据
+                metrics_data = {
+                    'total_time': time.time() - start_time,
+                    'best_epoch': best_epoch,
+                    'best_loss': best_metrics.get('valid_loss', 'N/A') if best_metrics else 'N/A',
+                    # 假设 Evaluator 返回包含 'valid_psnr' 等键
+                    'best_psnr': best_metrics.get('valid_psnr', 'N/A') if best_metrics else 'N/A',
+                    'best_l2': best_metrics.get('valid_l2', 'N/A') if best_metrics else 'N/A',
+                    'model_path': best_path,
+                    'gpu_info': gpu_info,
+                    'train_history': train_history,
+                    'valid_history': valid_history,
+                    'test_metrics': clean_test_metrics,
+                    'checkpoints': checkpoints
+                }
+
+                # 保存 config.json
+                config_save_path = os.path.join(self.saving_path, 'config.json')
+                with open(config_save_path, 'w', encoding='utf-8') as f:
+                    json.dump(config_data, f, indent=4, default=str) # default=str 处理无法序列化的对象
+                
+                # 保存 metrics.json
+                metrics_save_path = os.path.join(self.saving_path, 'metrics.json')
+                with open(metrics_save_path, 'w', encoding='utf-8') as f:
+                    json.dump(metrics_data, f, indent=4, default=str)
+                
+                self.main_log(f"Saved JSON logs to {self.saving_path}")
+
+                # 生成报告
+                generator = DiffSRReportGenerator()
+                report_path = generator.generate_train_report(
+                    config=config_data,
+                    metrics=metrics_data,
+                    output_path=os.path.join(self.saving_path, 'training_report.md')
+                )
+                self.main_log("Training report generated: {}".format(report_path))
+
+            except Exception as e:
+                self.main_log("Failed to generate report or save json: {}".format(e))
+                import traceback
+                self.main_log(traceback.format_exc())
+
         if self.dist and dist.is_initialized():
             dist.barrier()
 
