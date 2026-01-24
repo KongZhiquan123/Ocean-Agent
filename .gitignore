@@ -200,8 +200,8 @@ __pycache__/
 node_modules/
 
 # Datasets files
-./datasets/
-*_dataset/
+/datasets/
+/*_dataset/
 outputs/
 *_output/
 *.csv
@@ -216,3 +216,4 @@ outputs/
 era5_*
 ERA5_*
 .Ocean_agent**
+/config.json

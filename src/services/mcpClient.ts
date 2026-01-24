@@ -33,7 +33,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import { memoize, pickBy } from 'lodash-es'
 import type { Tool } from '@tool'
-import { MCPTool } from '@tools/MCPTool/MCPTool'
+import { MCPTool } from '@tools/4-SystemTools/MCPTool/MCPTool'
 import { logMCPError } from '@utils/log'
 import { Command } from '@commands'
 import { PRODUCT_COMMAND } from '@constants/product'
