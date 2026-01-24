@@ -41,7 +41,7 @@ import { getCwd } from './utils/state'
 import { checkAutoCompact } from './utils/autoCompactCore'
 
 // Extended ToolUseContext for query functions
-interface ExtendedToolUseContext extends ToolUseContext {
+export interface ExtendedToolUseContext extends ToolUseContext {
   abortController: AbortController
   options: {
     commands: any[]
@@ -57,6 +57,7 @@ interface ExtendedToolUseContext extends ToolUseContext {
   readFileTimestamps: { [filename: string]: number }
   setToolJSX: (jsx: any) => void
   requestId?: string
+  isServerMode?: boolean // 命令行运行kode时该模式为false，若在命令行运行还强制开启该模式会报错
 }
 
 export type Response = { costUSD: number; response: string }
@@ -96,6 +97,14 @@ export type ProgressMessage = {
   toolUseID: string
   type: 'progress'
   uuid: UUID
+}
+
+export type BackendOnlyMessage = {
+  type: 'backend_only'
+  tool_name: string
+  tool_use_id: string
+  uuid: UUID
+  data: any
 }
 
 // Each array item is either a single message or a message-and-response pair
@@ -316,7 +325,7 @@ export async function* query(
       shouldSkipPermissionCheck,
     )) {
       yield message
-      // progress messages are not sent to the server, so don't need to be accumulated for the next turn
+      // progress and backend_only messages are not sent to the server, so don't need to be accumulated for the next turn
       if (message.type === 'user') {
         toolResults.push(message)
       }
@@ -330,7 +339,7 @@ export async function* query(
       shouldSkipPermissionCheck,
     )) {
       yield message
-      // progress messages are not sent to the server, so don't need to be accumulated for the next turn
+      // progress and backend_only messages are not sent to the server, so don't need to be accumulated for the next turn
       if (message.type === 'user') {
         toolResults.push(message)
       }
@@ -581,7 +590,7 @@ async function* checkPermissionsAndCallTool(
   toolUseID: string,
   siblingToolUseIDs: Set<string>,
   input: { [key: string]: boolean | string | number },
-  context: ToolUseContext,
+  context: ExtendedToolUseContext,
   canUseTool: CanUseToolFn,
   assistantMessage: AssistantMessage,
   shouldSkipPermissionCheck?: boolean,
@@ -652,7 +661,15 @@ async function* checkPermissionsAndCallTool(
     for await (const result of generator) {
       switch (result.type) {
         case 'result':
-          
+          if (context.isServerMode) {
+            yield {
+              type: 'backend_only',
+              tool_name: tool.name,
+              tool_use_id: toolUseID,
+              uuid: crypto.randomUUID(),
+              data: result.data,
+            } as unknown as ProgressMessage
+          }
           yield createUserMessage(
             [
               {

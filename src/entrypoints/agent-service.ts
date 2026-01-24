@@ -4,26 +4,7 @@
 import { existsSync } from 'fs'
 import { randomUUID } from 'crypto'
 import { getAskModeTools, getEditModeTools, query, CanUseToolFn } from '../api'
-import type { Message, UserMessage, AssistantMessage, ToolUseContext, Tool } from '../api'
-
-// 和 src/query.ts 中 ExtendedToolUseContext 保持一致
-interface ExtendedToolUseContext extends ToolUseContext {
-  abortController: AbortController
-  options: {
-    commands: any[]
-    forkNumber: number
-    messageLogName: string
-    tools: Tool[]
-    verbose: boolean
-    safeMode: boolean
-    maxThinkingTokens: number
-    isKodingRequest?: boolean
-    model?: string
-  }
-  readFileTimestamps: { [filename: string]: number }
-  setToolJSX: (jsx: any) => void
-  requestId?: string
-}
+import type { Message, UserMessage, AssistantMessage, Tool, ExtendedToolUseContext } from '../api'
 
 // 工具缓存，避免每次请求都重新初始化，但其实因为getTools都使用了React.memoize，所以影响不大，这里是为了处理可能的getTools未使用memoize的情况
 const toolsCache: { ask?: Tool[]; edit?: Tool[] } = {}
@@ -350,6 +331,7 @@ Bun.serve({
         responseState: {},
         setToolJSX: () => null,
         requestId: reqId,
+        isServerMode: true
       }
 
       console.log(
@@ -437,7 +419,22 @@ Bun.serve({
 
                 console.log(`[agent-service] [req ${reqId}] =============================`)
                 console.log(`[agent-service] [req ${reqId}] Received message type: ${msgType}`)
-
+                if (msgType === 'backend_only') {
+                  // @ts-ignore
+                  const backendMsg = msg as any
+                  console.log(
+                    `[agent-service] [req ${reqId}] [backend_only] Tool: ${backendMsg.tool_name}, Tool Use ID: ${backendMsg.tool_use_id}`
+                  )
+                  backendMsg.timestamp = Date.now()
+                  // 直接将原始数据发送给后端
+                  if (
+                    !safeEnqueue(backendMsg)
+                  ) {
+                    console.warn(`[agent-service] [req ${reqId}] Failed to enqueue backend_only event, breaking loop`)
+                    break
+                  }
+                  continue
+                }
                 // 🔥 详细打印 assistant 消息
                 if (msgType === 'assistant') {
                   const assistantMsg = msg as AssistantMessage
