@@ -1,4 +1,4 @@
-import { FileEditTool } from '@tools/FileEditTool/FileEditTool'
+import { FileEditTool } from '@tools/4-SystemTools/FileEditTool/FileEditTool'
 import { FileEditToolDiff } from '@components/permissions/FileEditPermissionRequest/FileEditToolDiff'
 import { Message } from '@components/Message'
 import {
@@ -7,7 +7,7 @@ import {
 } from '@utils/messages'
 import type { Tool } from '@tool'
 import { useTerminalSize } from '@hooks/useTerminalSize'
-import { FileWriteTool } from '@tools/FileWriteTool/FileWriteTool'
+import { FileWriteTool } from '@tools/4-SystemTools/FileWriteTool/FileWriteTool'
 import { FileWriteToolDiff } from '@components/permissions/FileWritePermissionRequest/FileWriteToolDiff'
 import type { AssistantMessage } from '@query'
 import * as React from 'react'

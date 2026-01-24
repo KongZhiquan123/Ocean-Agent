@@ -7,7 +7,7 @@ import { Cost } from '@components/Cost'
 import { ToolUseLoader } from '@components/ToolUseLoader'
 import { getTheme } from '@utils/theme'
 import { BLACK_CIRCLE } from '@constants/figures'
-import { ThinkTool } from '@tools/ThinkTool/ThinkTool'
+import { ThinkTool } from '@tools/4-SystemTools/ThinkTool/ThinkTool'
 import { AssistantThinkingMessage } from './AssistantThinkingMessage'
 import { TaskToolMessage } from './TaskToolMessage'
 

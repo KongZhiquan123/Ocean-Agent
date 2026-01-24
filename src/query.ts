@@ -36,8 +36,7 @@ import {
   NormalizedMessage,
   normalizeMessagesForAPI,
 } from '@utils/messages'
-import { createToolExecutionController } from '@utils/toolExecutionController'
-import { BashTool } from '@tools/BashTool/BashTool'
+import { BashTool } from '@tools/4-SystemTools/BashTool/BashTool'
 import { getCwd } from './utils/state'
 import { checkAutoCompact } from './utils/autoCompactCore'
 

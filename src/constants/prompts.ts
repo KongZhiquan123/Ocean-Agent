@@ -6,7 +6,7 @@ import {
 } from '@utils/messages'
 import { getCwd } from '@utils/state'
 import { PRODUCT_NAME, PROJECT_FILE, PRODUCT_COMMAND } from './product'
-import { BashTool } from '@tools/BashTool/BashTool'
+import { BashTool } from '@tools/4-SystemTools/BashTool/BashTool'
 import { MACRO } from './macros'
 
 // // Security policy constant matching reference implementation 

@@ -313,9 +313,10 @@ Bun.serve({
       }
       if (body?.mode === 'ask') {
         systemPrompt.push(
-          '你应该专注于回答用户的问题，而不是修改代码。',
+          '你应该专注于回答用户的问题，绝不应该修改代码。',
         )
       }
+      systemPrompt.push('你应该多去调用现有工具，只在必要时生成代码。')
       // context：根据你的需求扩展
       const context: { [k: string]: string } = {
         userId,

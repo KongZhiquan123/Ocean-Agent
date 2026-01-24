@@ -1,5 +1,5 @@
 import { Command } from '@commands'
-import { BashTool } from '@tools/BashTool/BashTool'
+import { BashTool } from '@tools/4-SystemTools/BashTool/BashTool'
 
 export default {
   type: 'prompt',
