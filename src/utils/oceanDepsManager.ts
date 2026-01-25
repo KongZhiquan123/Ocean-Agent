@@ -15,6 +15,7 @@ export class OceanDepsManager {
 	private static diffSRPath: string | null = null
 	private static predictionPath: string | null = null
 	private static preprocessingPath: string | null = null
+	private static visualizationPath: string | null = null
 	private static pythonPath: string | null = null
 	/**
 	 * 获取 DiffSR 路径
@@ -169,7 +170,79 @@ export class OceanDepsManager {
 			}
 		}
 		// 此处将不再使用开发者路径，确保预处理脚本必须随产品一起提供
+		throw new Error(
+			`❌ Preprocessing not found!
+
+` +
+			`This should not happen in a properly packaged Kode installation.
+` +
+			`The embedded Preprocessing should be available at: ${bundledPath}
+
+` +
+			`Tried locations:
+` +
+			`  1. Embedded (built-in): ${bundledPath}
+` +
+			`  2. PREPROCESSING_PATH env var: ${process.env.PREPROCESSING_PATH || '(not set)'}
+
+` +
+			`If you installed Kode from npm/package, please reinstall.`
+		)
 	}
+
+	/**
+	 * 获取 Visualization 路径
+	 * 优先级：嵌入式路径（产品自带）> 环境变量
+	 *
+	 * 产品默认使用嵌入在 Kode 中的 Visualization 代码，无需用户额外下载
+	 */
+	static async ensureVisualization(): Promise<string> {
+		if (this.visualizationPath) return this.visualizationPath
+
+		// 1. 优先使用嵌入的 Visualization（产品自带，开箱即用）
+		const bundledPath = path.resolve(__dirname, '..', 'services', 'visualization')
+		try {
+			await fs.access(path.join(bundledPath, 'plot_engine.py'))
+			this.visualizationPath = bundledPath
+			console.log(`✓ Using embedded Visualization (built-in): ${bundledPath}`)
+			return bundledPath
+		} catch {
+			console.log(`ℹ Embedded Visualization not found, trying alternative locations...`)
+		}
+
+		// 2. 回退：环境变量指定的路径（用于高级用户自定义）
+		if (process.env.VISUALIZATION_PATH) {
+			try {
+				await fs.access(path.join(process.env.VISUALIZATION_PATH, 'plot_engine.py'))
+				this.visualizationPath = process.env.VISUALIZATION_PATH
+				console.log(`✓ Using Visualization from VISUALIZATION_PATH: ${this.visualizationPath}`)
+				return this.visualizationPath
+			} catch {
+				console.warn(`⚠ VISUALIZATION_PATH set but invalid: ${process.env.VISUALIZATION_PATH}`)
+			}
+		}
+
+		// 此处将不再使用开发者路径，确保可视化脚本必须随产品一起提供
+		throw new Error(
+			`❌ Visualization not found!
+
+` +
+			`This should not happen in a properly packaged Kode installation.
+` +
+			`The embedded Visualization should be available at: ${bundledPath}
+
+` +
+			`Tried locations:
+` +
+			`  1. Embedded (built-in): ${bundledPath}
+` +
+			`  2. VISUALIZATION_PATH env var: ${process.env.VISUALIZATION_PATH || '(not set)'}
+
+` +
+			`If you installed Kode from npm/package, please reinstall.`
+		)
+	}
+
 	/**
 	 * 查找可用的 Python 解释器
 	 */

@@ -151,8 +151,10 @@ export const OceanPreprocessPipelineTool = {
       const stdoutChunks: string[] = []
       const stderrChunks: string[] = []
 
+      // Find Python executable and script path
       const pythonCmd = await OceanDepsManager.findPython()
-      const scriptPath = path.join(await OceanDepsManager.ensurePreprocessing(), 'main.py')
+      const preprocessingDir = await OceanDepsManager.ensurePreprocessing()
+      const scriptPath = path.join(preprocessingDir, 'main.py')
 
       // 因为python脚本中使用了相对导入，所以不要求工作目录必须是脚本所在目录(即不需要cd命令)，但需要确保脚本路径正确
       const executeCommand = `${pythonCmd} ${scriptPath} ${use_cnn_validation ? '' : '--simple'}`.trim()

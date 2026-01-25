@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { FallbackToolUseRejectedMessage } from '@components/FallbackToolUseRejectedMessage'
 import { Tool, ValidationResult } from '@tool'
 import { getCwd } from '@utils/state'
+import { OceanDepsManager } from '@utils/oceanDepsManager'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import * as path from 'node:path'
@@ -160,14 +161,10 @@ export const OceanVisualizationTool = {
       ...config
     }
 
-    // Python script path
-    const projectRoot = path.join(cwd, 'kode')
-    const scriptPath = path.join(projectRoot, '..', 'src', 'services', 'visualization', 'plot_engine.py')
-
-    // Find Python executable
-    const pythonCmd = process.platform === 'win32'
-      ? 'C:\\ProgramData\\anaconda3\\python.exe'
-      : 'python3'
+    // Find Python executable and script path
+    const pythonCmd = await OceanDepsManager.findPython()
+    const visualizationDir = await OceanDepsManager.ensureVisualization()
+    const scriptPath = path.join(visualizationDir, 'plot_engine.py')
 
     let stdout = ''
     let stderr = ''
@@ -193,14 +190,17 @@ export const OceanVisualizationTool = {
 
     try {
       // Execute Python visualization script
+      // 因为python脚本中可能使用了相对导入，所以不要求工作目录必须是脚本所在目录(即不需要cd命令)，但需要确保脚本路径正确
       await new Promise<void>((resolve, reject) => {
         const env = {
           ...process.env,
           PLOT_CONFIG: JSON.stringify(plotConfig),
         }
 
-        const proc = spawn(pythonCmd, [scriptPath], {
-          cwd: projectRoot,
+        const executeCommand = `${pythonCmd} ${scriptPath}`
+        const proc = spawn('sh', ['-c', executeCommand], {
+          cwd,
+          stdio: ['ignore', 'pipe', 'pipe'],
           env,
         })
 

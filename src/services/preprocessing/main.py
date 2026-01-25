@@ -12,11 +12,11 @@ def preproces():
     """使用 services/preprocessing 模块运行完整的预处理流程"""
     from pipeline import run_preprocessing_pipeline
     if not INPUT_DIR:
-        print("❌ 错误：未设置环境变量 PREPROCESS_INPUT_DIR")
+        print("[ERROR] PREPROCESS_INPUT_DIR not set")
         exit(1)
 
     if not OUTPUT_DIR:
-        print("❌ 错误：未设置环境变量 PREPROCESS_OUTPUT_DIR")
+        print("[ERROR] PREPROCESS_OUTPUT_DIR not set")
         exit(1)
 
     # 构建配置
@@ -27,7 +27,7 @@ def preproces():
         'variable_name': VAR_NAME,
     }
 
-    print(f"📋 配置信息:")
+    print(f"[CONFIG] Configuration:")
     print(f"   输入目录: {INPUT_DIR}")
     print(f"   输出目录: {OUTPUT_DIR}")
     print(f"   文件模式: {FILE_PATTERN}")
@@ -39,7 +39,7 @@ def preproces():
         success = run_preprocessing_pipeline(config)
         exit(0 if success else 1)
     except Exception as e:
-        print(f"\n❌ 预处理失败: {e}")
+        print(f"\n[ERROR] Preprocessing failed: {e}")
         import traceback
         traceback.print_exc()
         exit(1)
@@ -90,7 +90,7 @@ def preprocess_simple():
         'variable_name': VAR_NAME,
     }
 
-    print(f"📋 配置信息 (简化模式，无 CNN 验证):")
+    print(f"[CONFIG] Configuration (Simple mode, no CNN validation):")
     print(f"   输入目录: {INPUT_DIR}")
     print(f"   输出目录: {OUTPUT_DIR}")
     print(f"   文件模式: {FILE_PATTERN}")
@@ -103,13 +103,13 @@ def preprocess_simple():
         stats = preprocessor.run()
 
         if stats['files_processed'] == 0:
-            print("\n❌ 预处理失败：未成功处理任何文件")
+            print("\n[ERROR] Preprocessing failed: No files processed")
             exit(1)
 
         # 生成报告
         generate_report(stats, OUTPUT_DIR)
 
-        print("\n✅ 处理完成！")
+        print("\n[SUCCESS] Processing completed!")
         print(f"   输出文件: {stats.get('output_file', 'N/A')}")
         print(f"   报告文件: {os.path.join(OUTPUT_DIR, 'validation_report.md')}")
         exit(0)
