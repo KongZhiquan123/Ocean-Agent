@@ -26,13 +26,12 @@ class DiffSRReportGenerator:
             template_dir = current_dir / 'report_templates'
 
         self.template_dir = Path(template_dir)
-        self.train_template = self.template_dir / 'sr_train_report.md'
-        self.data_template = self.template_dir / 'sr_data_report.md'
-
-    def generate_train_report(self,
-                              config: Dict[str, Any],
-                              metrics: Dict[str, Any],
-                              output_path: str) -> str:
+        self.train_template = self.template_dir / "sr_train_report.md"
+        self.data_template = self.template_dir / "sr_data_report.md"
+    def generate_train_report(
+        self, config: Dict[str, Any], metrics: Dict[str, Any], output_path: str,
+        viz_paths: Optional[List[str]] = None
+    ) -> str:
         """
         生成训练报告
 
@@ -40,7 +39,7 @@ class DiffSRReportGenerator:
             config: 训练配置信息
             metrics: 训练指标和结果
             output_path: 报告输出路径
-
+            viz_paths: 可视化图片路径列表（可选）
         Returns:
             生成的报告路径
         """
@@ -182,10 +181,10 @@ class DiffSRReportGenerator:
 
         # 8.2 关键数据总结
         summary_table = self._generate_summary_table(config, metrics)
-        report = report.replace(
-            '| 训练样本 |...|',
-            summary_table
-        )
+        report = report.replace("| 训练样本 |...|", summary_table)
+
+        # 4. 可视化结果处理
+        report = self._process_visualization_section(report, viz_paths)
 
         # 写入报告
         output_path = Path(output_path)
@@ -317,6 +316,41 @@ class DiffSRReportGenerator:
         return str(output_path)
 
     # 辅助函数：生成各种表格
+    def _process_visualization_section(self, report: str, viz_paths: Optional[List[str]]) -> str:
+        """
+        处理可视化部分的占位符
+        Args:
+            report: 报告内容
+            viz_paths: 可视化图片路径列表
+        Returns:
+            处理后的报告内容
+        """
+        # 处理 VIZ_FILE_LIST 占位符
+        viz_file_list_placeholder = "<!-- VIZ_FILE_LIST: 脚本自动填充，列出所有生成的可视化图片路径 -->"
+        if viz_paths and len(viz_paths) > 0:
+            file_list = "\n".join([f"- `{path}`" for path in viz_paths])
+            report = report.replace(viz_file_list_placeholder, file_list)
+        else:
+            report = report.replace(viz_file_list_placeholder, "*暂无可视化文件*")
+
+        # 处理 VIZ_IMAGES 占位符
+        viz_images_placeholder = "<!-- VIZ_IMAGES: 脚本自动填充，插入所有可视化图片 -->"
+        if viz_paths and len(viz_paths) > 0:
+            images_md = []
+            for path in viz_paths:
+                # 从路径中提取文件名作为图片标题
+                import os
+                filename = os.path.basename(path)
+                name = os.path.splitext(filename)[0]
+                # 将下划线替换为空格，首字母大写
+                title = name.replace("_", " ").title()
+                images_md.append(f"#### {title}\n\n![{title}]({path})")
+            report = report.replace(viz_images_placeholder, "\n\n".join(images_md))
+        else:
+            report = report.replace(viz_images_placeholder, "*暂无可视化图片*")
+
+        # 注意：AI_FILL 占位符保留不处理，由 AI 后续填充
+        return report
 
     def _generate_model_config_table(self, config: Dict[str, Any]) -> str:
         """生成模型配置表格"""
@@ -351,9 +385,9 @@ class DiffSRReportGenerator:
             f"| **数据集** | {config.get('name', 'N/A')} |",
             f"| **空间分辨率** | {config.get('shape', 'N/A')} |",
             f"| **训练批次大小** | {config.get('train_batchsize', 'N/A')} |",
-            f"| **训练集** | {t_r} |",
-            f"| **验证集** | {v_r} |",
-            f"| **测试集** | {te_r} |",
+            f"| **训练集** | {train_ratio} |",
+            f"| **验证集** | {valid_ratio} |",
+            f"| **测试集** | {test_ratio} |",
         ]
         return '\n'.join(rows)
 
@@ -438,12 +472,11 @@ class DiffSRReportGenerator:
         ssim = metrics.get('ssim', 'N/A')
         rel_l2 = metrics.get('rel_l2', 'N/A')
         mse = metrics.get('mse', 'N/A')
-
-        psnr_str = f"{psnr:.4f} dB" if isinstance(psnr, (int, float)) else str(psnr)
+        # 格式化数值
+        psnr_str = f"{psnr:.4f}" if isinstance(psnr, (int, float)) else str(psnr)
         ssim_str = f"{ssim:.4f}" if isinstance(ssim, (int, float)) else str(ssim)
         l2_str = f"{rel_l2:.6f}" if isinstance(rel_l2, (int, float)) else str(rel_l2)
         mse_str = f"{mse:.6f}" if isinstance(mse, (int, float)) else str(mse)
-
         rows = [
             "| 指标 | 值 | 说明 |",
             "|------|-----|------|",
@@ -473,20 +506,14 @@ class DiffSRReportGenerator:
 
     def _generate_summary_table(self, config: Dict, metrics: Dict) -> str:
         """生成总结表格"""
-        data_config = config.get('data', {})
-        num_params = config.get('model', {}).get('num_params', 'N/A')
-        
-        if isinstance(num_params, (int, float)):
-            num_params_str = f"{num_params:,}"
-        else:
-            num_params_str = str(num_params)
-
-        best_psnr = metrics.get('best_psnr', 'N/A')
-        psnr_str = f"{best_psnr:.4f} dB" if isinstance(best_psnr, (int, float)) else str(best_psnr)
-
-        best_l2 = metrics.get('best_l2', 'N/A')
-        l2_str = f"{best_l2:.6f}" if isinstance(best_l2, (int, float)) else str(best_l2)
-        
+        data_config = config.get("data", {})
+        # 格式化数值
+        num_params = config.get("model", {}).get("num_params", None)
+        num_params_str = f"{num_params:,}" if isinstance(num_params, (int, float)) else "N/A"
+        best_psnr = metrics.get('best_psnr', None)
+        psnr_str = f"{best_psnr:.4f}" if isinstance(best_psnr, (int, float)) else "N/A"
+        best_l2 = metrics.get('best_l2', None)
+        l2_str = f"{best_l2:.6f}" if isinstance(best_l2, (int, float)) else "N/A"
         rows = [
             "| 项目 | 数值 |",
             "|------|------|",
@@ -546,10 +573,11 @@ class DiffSRReportGenerator:
             f"| 空间可视化 | {output_info.get('spatial_viz_path', 'N/A')} |",
             f"| 数据报告 | {output_info.get('report_path', 'N/A')} |",
         ]
-        return '\n'.join(rows)
-
-
-def generate_train_report_from_file(config_file: str, metrics_file: str, output_path: str) -> str:
+        return "\n".join(rows)
+def generate_train_report_from_file(
+    config_file: str, metrics_file: str, output_path: str,
+    viz_paths: Optional[List[str]] = None
+) -> str:
     """
     从文件生成训练报告的便捷函数
 
@@ -557,21 +585,36 @@ def generate_train_report_from_file(config_file: str, metrics_file: str, output_
         config_file: 配置JSON文件路径
         metrics_file: 指标JSON文件路径
         output_path: 输出报告路径
-
+        viz_paths: 可视化图片路径列表（可选）
     Returns:
         生成的报告路径
     """
-    with open(config_file, 'r') as f:
+    # 先读取配置和指标文件
+    with open(config_file, "r", encoding="utf-8") as f:
         config = json.load(f)
-
-    with open(metrics_file, 'r') as f:
+    with open(metrics_file, "r", encoding="utf-8") as f:
         metrics = json.load(f)
 
+    # --- 自动备份 JSON（可选） ---
+    try:
+        output_dir = Path(output_path).parent
+        output_dir.mkdir(parents=True, exist_ok=True)
+        # 备份 config.json
+        config_save_path = output_dir / "config_backup.json"
+        with open(config_save_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=4, ensure_ascii=False, default=str)
+        # 备份 metrics.json
+        metrics_save_path = output_dir / "metrics_backup.json"
+        with open(metrics_save_path, "w", encoding="utf-8") as f:
+            json.dump(metrics, f, indent=4, ensure_ascii=False, default=str)
+    except Exception as e:
+        print(f"Warning: Could not backup JSON files: {e}")
+
     generator = DiffSRReportGenerator()
-    return generator.generate_train_report(config, metrics, output_path)
-
-
-def generate_data_report_from_file(data_info_file: str, processing_info_file: str, output_path: str) -> str:
+    return generator.generate_train_report(config, metrics, output_path, viz_paths)
+def generate_data_report_from_file(
+    data_info_file: str, processing_info_file: str, output_path: str
+) -> str:
     """
     从文件生成数据处理报告的便捷函数
 
@@ -598,15 +641,25 @@ if __name__ == '__main__':
 
     if len(sys.argv) < 4:
         print("用法:")
-        print("  生成训练报告: python report_generator.py train <config.json> <metrics.json> <output.md>")
-        print("  生成数据报告: python report_generator.py data <data_info.json> <processing_info.json> <output.md>")
+        print(
+            "  生成训练报告: python report_generator.py train <config.json> <metrics.json> <output.md> [--viz_paths path1,path2,...]"
+        )
+        print(
+            "  生成数据报告: python report_generator.py data <data_info.json> <processing_info.json> <output.md>"
+        )
         sys.exit(1)
 
     report_type = sys.argv[1]
-
-    if report_type == 'train':
-        generate_train_report_from_file(sys.argv[2], sys.argv[3], sys.argv[4])
-    elif report_type == 'data':
+    if report_type == "train":
+        # 解析可选的 --viz_paths 参数
+        viz_paths = None
+        for i, arg in enumerate(sys.argv):
+            if arg == "--viz_paths" and i + 1 < len(sys.argv):
+                viz_paths_str = sys.argv[i + 1]
+                viz_paths = [p.strip() for p in viz_paths_str.split(",") if p.strip()]
+                break
+        generate_train_report_from_file(sys.argv[2], sys.argv[3], sys.argv[4], viz_paths)
+    elif report_type == "data":
         generate_data_report_from_file(sys.argv[2], sys.argv[3], sys.argv[4])
     else:
         print(f"未知的报告类型: {report_type}")
