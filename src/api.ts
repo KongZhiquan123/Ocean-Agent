@@ -16,7 +16,7 @@ import '@anthropic-ai/sdk/shims/node'
  * 这是最核心的函数，后端主要调用这个
  */
 export { query } from './query'
-export type { Message, UserMessage, AssistantMessage } from './query'
+export type { Message, UserMessage, AssistantMessage, ExtendedToolUseContext } from './query'
 /**
  * Claude API 直接调用函数
  */
@@ -52,7 +52,7 @@ export {
 } from './utils/config'
 
 // ============ 工具和工具使用上下文类型 ============
-export type { Tool, ToolUseContext, ExtendedToolUseContext } from './Tool'
+export type { Tool, ToolUseContext } from './Tool'
 
 // ============ hooks导出 ============
 export type { CanUseToolFn } from './hooks/useCanUseTool'

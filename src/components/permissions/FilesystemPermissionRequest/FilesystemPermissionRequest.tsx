@@ -17,14 +17,14 @@ import {
   UnaryEvent,
   usePermissionRequestLogging,
 } from '@hooks/usePermissionRequestLogging'
-import { FileEditTool } from '@tools/FileEditTool/FileEditTool'
-import { FileWriteTool } from '@tools/FileWriteTool/FileWriteTool'
-import { GrepTool } from '@tools/GrepTool/GrepTool'
-import { GlobTool } from '@tools/GlobTool/GlobTool'
-import { LSTool } from '@tools/lsTool/lsTool'
-import { FileReadTool } from '@tools/FileReadTool/FileReadTool'
-import { NotebookEditTool } from '@tools/NotebookEditTool/NotebookEditTool'
-import { NotebookReadTool } from '@tools/NotebookReadTool/NotebookReadTool'
+import { FileEditTool } from '@tools/4-SystemTools/FileEditTool/FileEditTool'
+import { FileWriteTool } from '@tools/4-SystemTools/FileWriteTool/FileWriteTool'
+import { GrepTool } from '@tools/4-SystemTools/GrepTool/GrepTool'
+import { GlobTool } from '@tools/4-SystemTools/GlobTool/GlobTool'
+import { LSTool } from '@tools/4-SystemTools/lsTool/lsTool'
+import { FileReadTool } from '@tools/4-SystemTools/FileReadTool/FileReadTool'
+import { NotebookEditTool } from '@tools/4-SystemTools/NotebookEditTool/NotebookEditTool'
+import { NotebookReadTool } from '@tools/4-SystemTools/NotebookReadTool/NotebookReadTool'
 import { FallbackPermissionRequest } from '@components/permissions/FallbackPermissionRequest'
 import {
   grantWritePermissionForOriginalDir,

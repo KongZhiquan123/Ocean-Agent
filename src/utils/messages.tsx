@@ -29,7 +29,7 @@ import chalk from 'chalk'
 import * as React from 'react'
 import { UserBashInputMessage } from '@components/messages/UserBashInputMessage'
 import { Spinner } from '@components/Spinner'
-import { BashTool } from '@tools/BashTool/BashTool'
+import { BashTool } from '@tools/4-SystemTools/BashTool/BashTool'
 import { ToolUseBlock } from '@anthropic-ai/sdk/resources/index.mjs'
 
 // NOTE: Dynamic content processing for custom commands has been moved to

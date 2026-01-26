@@ -1,9 +1,9 @@
 import type { CanUseToolFn } from './hooks/useCanUseTool'
 import { Tool, ToolUseContext } from './Tool'
-import { BashTool, inputSchema } from './tools/BashTool/BashTool'
-import { FileEditTool } from './tools/FileEditTool/FileEditTool'
-import { FileWriteTool } from './tools/FileWriteTool/FileWriteTool'
-import { NotebookEditTool } from './tools/NotebookEditTool/NotebookEditTool'
+import { BashTool, inputSchema } from './tools/4-SystemTools/BashTool/BashTool'
+import { FileEditTool } from './tools/4-SystemTools/FileEditTool/FileEditTool'
+import { FileWriteTool } from './tools/4-SystemTools/FileWriteTool/FileWriteTool'
+import { NotebookEditTool } from './tools/4-SystemTools/NotebookEditTool/NotebookEditTool'
 import { getCommandSubcommandPrefix, splitCommand } from './utils/commands'
 import {
   getCurrentProjectConfig,
