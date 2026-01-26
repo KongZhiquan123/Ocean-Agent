@@ -7,6 +7,7 @@ import path from 'path'
 import { getCwd } from '@utils/state'
 import { OceanDepsManager } from '@utils/oceanDepsManager'
 import { createAssistantMessage } from '@utils/messages'
+import findFileRecursively from '@utils/findFileRecursively'
 
 const execAsync = promisify(exec)
 
@@ -436,30 +437,30 @@ print(json.dumps(configs, indent=2))
 						content: createAssistantMessage('\n📝 Generating training report...\n')
 					}
 
-					try {
-						const reportPath = params.output_dir
-							? path.join(params.output_dir, 'training_report.md')
-							: './training_report.md'
+					const reportPath = params.output_dir
+						? await findFileRecursively(params.output_dir, 'training_report.md')
+						: './training_report.md'
 
+					if (!reportPath) {
 						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`📊 Report will be saved to: ${reportPath}\n\n`)
+							type: 'result' as const,
+							resultForAssistant: '⚠️  Training report not found.',
+							data: {
+								result: '⚠️  Training report not found.',
+								durationMs: Date.now() - start,
+							}
 						}
+						return
+					}
 
-						// Note: This is a simplified version. In production, you'd parse training logs
-						// to extract metrics and create proper JSON files for the report generator
-
-					} catch (reportError) {
-						yield {
-							type: 'progress' as const,
-							content: createAssistantMessage(`⚠️  Could not generate report: ${reportError}\n`)
-						}
+					yield {
+						type: 'progress' as const,
+						content: createAssistantMessage(`📊 Report will be saved to: ${reportPath}\n\n`)
 					}
 
 					const output: Output = {
 						result: `✅ Training completed successfully!\n\n` +
-								`📊 Check training logs in config output directory.\n` +
-								`📝 Training report: ${params.output_dir || '.'}/training_report.md`,
+								`📝 All training outputs (e.g., report, model.pth) are saved in the output directory ${path.dirname(reportPath)}\n`,
 						durationMs: Date.now() - start,
 					}
 					yield {
@@ -655,8 +656,7 @@ print(json.dumps(configs, indent=2))
 				if (exitCode !== 0) {
 					throw new Error(`Inference failed with error: ${allStderr || 'Unknown error'}`)
 				}
-
-				// Read metrics.json
+				// Read metrics.json			
 				const metricsFile = path.join(outputDir, 'metrics.json')
 				let metricsData: any = {}
 

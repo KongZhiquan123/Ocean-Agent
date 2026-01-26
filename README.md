@@ -8,8 +8,8 @@
 # clone代码库
 git clone https://github.com/KongZhiquan123/Ocean-Agent
 
-# 进入kode目录
-cd kode
+# 进入Ocean-Agent目录
+cd Ocean-Agent
 ```
 
 ### 2. 安装依赖
@@ -22,6 +22,10 @@ bun install
 **或使用npm:**
 ```bash
 npm install
+```
+**以及Python依赖:**
+```bash
+pip install -r requirements.txt
 ```
 
 ### 3. 构建项目
@@ -228,3 +232,5 @@ bun run clean
 bun install
 bun run build
 ```
+**Q: bun link之后kode命令仍不可用？**
+A: 不使用Windows系统，尝试Linux或macOS，确保全局路径正确配置。

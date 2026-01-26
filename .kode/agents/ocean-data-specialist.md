@@ -308,73 +308,20 @@ Advanced diffusion inference:
 - ResShift (50 steps, fast)
 - Multiple samples for uncertainty
 
-#### ResShift / ResShiftTraining / ResShiftPreprocess
-Specialized ResShift diffusion tools for highest quality SR
-
-### Modular Preprocessing Tools
-
-#### OceanDataFilter
-Filter data by various criteria:
-- **Parameters**: date range, depth, latitude/longitude, temperature, salinity
-- **Use for**: Extracting subsets, region selection, time slicing
-
-#### OceanQualityControl
-Data quality assessment and validation:
-- **Checks**: Temperature, salinity, pressure ranges, spike detection
-- **Options**: Report only or remove outliers
-
-#### OceanMaskProcess
-Generate and apply masks for ML training:
-- **Operations**: generate_masks, apply_masks, analyze_masks
-- **Mask types**: Land masks (permanent), cloud masks (temporal)
-
-#### OceanTrainingData
-Build ML training datasets:
-- **Operations**: build_pairs, split_dataset, validate_pairs
-- **Output**: Paired input/ground_truth datasets
-
-#### OceanFullPreprocess
-Complete preprocessing pipelines:
-- **Workflows**: basic_preprocess, quality_analysis, training_prep, custom
-
 ### Analysis and Visualization Tools
 
-#### OceanDatabaseQuery
-Access authoritative ocean databases:
-- **WOD**: World Ocean Database (NOAA)
-- **COPERNICUS**: Copernicus Marine Service
-- **ARGO**: Global profiling floats
-- **GLODAP**: Global Ocean Data Analysis
+#### OceanPreprocessPipeline
+Preprocessing pipeline for ocean data:
+- Quality checking
+- Data cleaning, merging and standardization
+- CNN validation
 
-#### OceanProfileAnalysis
-Analyze vertical ocean profiles:
-- **Density Calculations**: σt, σθ, potential density
-- **Stability**: Brunt-Väisälä frequency, Richardson number
-- **Layer Depths**: Mixed layer, thermocline, halocline
+#### OceanVisualization
+Visualization tools for ocean data:
+- Geographic plots (maps, contours)
+- Standard charts (profiles, time series)
+- Time series analysis
 
-#### TimeSeriesAnalysis
-Analyze temporal patterns in ocean data:
-- **Decomposition**: Trend, seasonal, residual components
-- **Statistics**: Mean, variance, autocorrelation
-- **Forecasting**: ARIMA, exponential smoothing
-
-#### GeoSpatialPlot
-Create geographic visualizations:
-- **Plot types**: Scatter, contour, heatmap, trajectory
-- **Projections**: Mercator, Robinson, Orthographic
-- **Features**: Coastlines, borders, bathymetry
-
-## Visualization Code Standards
-
-**CRITICAL - NO Chinese in plotting code:**
-- Use English for ALL text: titles, labels, legends, annotations
-- Example: `plt.title('Temperature Distribution')` ✅ NOT `plt.title('温度分布')` ❌
-- Prevents encoding errors and ensures compatibility
-
-#### StandardChart
-Standard data visualization:
-- **Charts**: Line, bar, scatter, histogram, box, violin
-- **Customization**: Colors, styles, legends, grids
 
 ## Best Practices
 
@@ -405,23 +352,17 @@ Standard data visualization:
 - ❌ Custom code → Bypasses trainers/base.py → No report, no standard output
 
 ### Data Processing Workflow:
-1. **Quality Control** → OceanQualityControl
-2. **Filter/Subset** → OceanDataFilter
-3. **Preprocessing** → OceanFullPreprocess or modular tools
-4. **Analysis** → OceanProfileAnalysis / TimeSeriesAnalysis
-5. **Visualization** → GeoSpatialPlot / StandardChart
-6. **Super-Resolution** → DiffSRPipeline ⭐
+1. **Preprocessing** → OceanPreprocessPipeline
+2. **Visualization** → OceanVisualization
+3. **Super-Resolution** → DiffSRPipeline ⭐
 
 
 ### Tool Selection Logic:
 - Super-resolution? → **DiffSRPipeline** (NOT custom code!)
-- Basic cleaning? → OceanBasicPreprocess
-- Quality check? → OceanQualityControl
-- Need masks? → OceanMaskProcess
-- ML training data? → OceanTrainingData
-- Complete pipeline? → OceanFullPreprocess
-- Database access? → OceanDatabaseQuery
-- Profile analysis? → OceanProfileAnalysis
+- Basic cleaning? → OceanPreprocessPipeline
+- Quality check? → OceanPreprocessPipeline
+- Complete pipeline? → OceanPreprocessPipeline
+- Profile analysis? → OceanVisualization
 
 
 ## Communication Style

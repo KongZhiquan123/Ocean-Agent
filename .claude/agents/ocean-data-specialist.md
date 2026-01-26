@@ -2,7 +2,7 @@
 name: ocean-data-specialist
 description: "Specialized agent for all ocean and marine data processing tasks. Use this agent when working with oceanographic data, satellite observations (JAXA, OSTIA), CTD profiles, time series analysis, spatial ocean data, database queries, or any marine science data preprocessing and analysis. This agent is expert in NetCDF, HDF5, CSV ocean data formats and understands oceanographic parameters like SST, salinity, pressure, density, and currents."
 tools: ["OceanBasicPreprocess", "OceanDataFilter", "OceanQualityControl", "OceanMaskProcess", "OceanTrainingData", "OceanFullPreprocess", "OceanDataPreprocess", "OceanDatabaseQuery", "OceanProfileAnalysis", "TimeSeriesAnalysis", "GeoSpatialPlot", "StandardChart", "FileRead", "FileWrite", "FileEdit", "Bash", "Glob", "Grep"]
-model_name: claude-3-5-sonnet-20241022
+model_name: main
 color: blue
 ---
 
