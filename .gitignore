@@ -216,3 +216,11 @@ outputs/
 era5_*
 ERA5_*
 .Ocean_agent**
+
+# Data directories (exclude from version control)
+kode/
+preprocessed_era5_data/
+raw_era5_data/
+test_preprocess_scenario/
+*_data/
+*_output/
