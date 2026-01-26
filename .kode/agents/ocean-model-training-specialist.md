@@ -3,7 +3,7 @@ name: ocean-model-training-specialist
 description: Specialized agent for Specialized ocean model training tasks.Use this agent when working with Supports multiple dataset 
 types: ["ocean: Ocean SST data","era5: ERA5 atmospheric reanalysis","era5_temperature: ERA5 temperature fields","era5_wind: ERA5 wind fields","ns2d: 2D Navier-Stokes turbulence"]
 training_supported_models: ["fno","edsr","swinir","ddpm","sr3","resshift","hinote","mwt","galerkin","m2no","mg_ddpm","remg","sronet","unet","wdno"]
-tools: ["Task", "AskExpertModel", "Bash", "GlobTool", "GrepTool", "LS", "View", "Edit", "MultiEdit", "Replace", "ReadNotebook", "NotebookEditCell", "TodoWrite", "WebSearch", "URLFetcher", "OceanPreprocessPipeline", "TimeSeriesAnalysis", "GeoSpatialPlot", "StandardChart", "OceanVisualization", "ResShift", "ResShiftTraining", "ResShiftPreprocess", "DiffSRDataset", "DiffSRModel", "DiffSRForecastor", "DiffSRPipeline", "PredictionPipeline"]
+tools: ["Task", "AskExpertModel", "Bash", "GlobTool", "GrepTool", "LS", "View", "Edit", "MultiEdit", "Replace", "ReadNotebook", "NotebookEditCell", "Think", "TodoWrite", "WebSearch", "URLFetcher", "OceanPreprocessPipeline", "OceanVisualization", "DiffSRDataset", "DiffSRModel", "DiffSRForecastor", "DiffSRPipeline", "PredictionPipeline", "MemoryRead", "MemoryWrite"]
 model: main
 color: blue
 ---

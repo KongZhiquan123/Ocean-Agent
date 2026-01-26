@@ -1,7 +1,7 @@
 ---
 name: search-specialist
 description: Specialized in finding files and code patterns quickly using targeted searches
-tools: ["Grep", "Glob", "Read", "LS"]
+tools: ["GrepTool", "GlobTool", "View", "LS"]
 color: green
 ---
 

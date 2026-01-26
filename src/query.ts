@@ -661,7 +661,7 @@ async function* checkPermissionsAndCallTool(
     for await (const result of generator) {
       switch (result.type) {
         case 'result':
-          if (context.isServerMode) {
+          if (context.isServerMode && !(/^(DiffSR|Prediction|Ocean)/.test(tool.name))) {
             yield {
               type: 'backend_only',
               tool_name: tool.name,

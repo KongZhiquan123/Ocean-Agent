@@ -98,12 +98,12 @@ const API_SECRET = process.env.KODE_API_SECRET
 
 if (!API_SECRET) {
   console.warn(
-    '[agent-service] 环境变量 KODE_API_SECRET 未设置，/api/chat/stream 将拒绝所有请求',
+    '[agent-service] environment variable KODE_API_SECRET is not set! The service will reject all requests without proper authentication.',
   )
 }
 
 console.log(
-  `[agent-service] 启动中，端口=${PORT}, Bun=${Bun.version}, NODE_ENV=${process.env.NODE_ENV}`,
+  `[agent-service] Starting up, port=${PORT}, Bun=${Bun.version}, NODE_ENV=${process.env.NODE_ENV}`,
 )
 
 // 🔥 CRITICAL FIX: 禁用 streaming 模式以避免 API 代理兼容性问题
@@ -113,9 +113,9 @@ import { getGlobalConfig, saveGlobalConfig } from '../utils/config'
 const globalConfig = getGlobalConfig()
 if (globalConfig.stream !== false) {
   saveGlobalConfig({ ...globalConfig, stream: false })
-  console.log('[agent-service] Streaming 模式已禁用 (API 代理兼容性修复)')
+  console.log('[agent-service] Streaming mode has been disabled (API proxy compatibility fix)')
 } else {
-  console.log('[agent-service] Streaming 模式已为禁用状态')
+  console.log('[agent-service] Streaming mode is already disabled')
 }
 
 // Clean up old temp files asynchronously (don't block startup)
@@ -272,32 +272,37 @@ Bun.serve({
 
       const messages: Message[] = [userMessage]
 
-      // systemPrompt：这里可以根据你实际 Agent 的定位来调整
+      // systemPrompt 调整
       const systemPrompt: string[] = [
-        '你是一个运行在自定义 Web API 后端的智能代理。',
-        '你可以根据用户上传的数据文件和指令，调用内部工具进行数据分析、方案定制、代码生成与运行。',
-        '当用户使用中文时，请用中文回答。',
+        'You are an intelligent agent running behind a custom web API backend.',
+        'You can use uploaded data files and built-in tools to analyze data, design solutions, generate code, and execute it.',
+        'When the user writes in Chinese, reply in Chinese; otherwise respond in the user language.',
       ]
-
+      systemPrompt.push(
+        `
+        Always prioritize script-based execution over inline commands. 
+        For tasks involving data plotting (e.g., matplotlib, plotly) or complex logic, you must write the code into a clear, modular .py file first. 
+        Ensure the script includes all necessary imports and handles file saving (e.g., plt.savefig()) so that results are persistent. 
+        Avoid using python -c for any code exceeding 5 lines.
+        `
+      )
       // 🔥 Add outputs path instruction to system prompt
       if (outputsPath) {
         systemPrompt.push(
-          '',
-          '⚠️ **重要：文件输出规则**',
-          `- 当前工作目录: ${outputsPath}`,
-          '- 所有生成的文件（图表、报告、模型、数据处理结果等）必须保存在当前工作目录中',
-          '- 使用相对路径或直接指定文件名即可，不要使用绝对路径',
-          '- 例如: plt.savefig("plot.png") 而不是 plt.savefig("/some/absolute/path/plot.png")',
-          '- 例如: pd.to_csv("result.csv") 而不是指定其他目录',
-          '- 这样可以确保所有输出文件都在正确的位置，便于用户查找和管理',
+          'IMPORTANT: File output rules',
+          `- Current working directory: ${outputsPath}`,
+          '- Save all generated files (charts, reports, models, data outputs, etc.) in the current working directory.',
+          '- Use relative paths or just file names; do not use absolute paths.',
+          '- Example: plt.savefig("plot.png") instead of plt.savefig("/some/absolute/path/plot.png")',
+          '- Example: pd.to_csv("result.csv") without specifying another directory.',
+          '- Keeping everything here ensures outputs are easy for the user to find and manage.',
         )
       }
       if (body?.mode === 'ask') {
         systemPrompt.push(
-          '你应该专注于回答用户的问题，绝不应该修改代码。',
+          'You should focus on answering the user and must not modify code.',
         )
       }
-      systemPrompt.push('你应该多去调用现有工具，只在必要时生成代码。')
       // context：根据你的需求扩展
       const context: { [k: string]: string } = {
         userId,

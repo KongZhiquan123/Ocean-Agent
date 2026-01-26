@@ -1,7 +1,7 @@
 ---
 name: docs-writer
 description: "Documentation specialist for creating and updating technical documentation, README files, and API docs."
-tools: ["FileRead", "FileWrite", "FileEdit", "Grep", "Glob"]
+tools: ["View", "Replace", "Edit", "GrepTool", "GlobTool"]
 model: main
 ---
 

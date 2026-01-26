@@ -1,7 +1,7 @@
 ---
 name: test-writer
 description: "Specialized in writing comprehensive test suites. Use for creating unit tests, integration tests, and test documentation."
-tools: ["FileRead", "FileWrite", "FileEdit", "Bash", "Grep"]
+tools: ["View", "Replace", "Edit", "Bash", "GrepTool"]
 model: main
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: dao-qi-harmony-designer
 description: Architecture and design harmony specialist that evaluates system coherence, design patterns, and architectural decisions
-tools: ["Read", "Grep", "Glob", "LS"]
+tools: ["View", "GrepTool", "GlobTool", "LS"]
 color: red
 ---
 

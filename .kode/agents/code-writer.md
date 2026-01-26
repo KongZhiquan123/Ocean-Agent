@@ -1,7 +1,7 @@
 ---
 name: code-writer
 description: Specialized in writing and modifying code, implementing features, fixing bugs, and refactoring
-tools: ["Read", "Write", "Edit", "MultiEdit", "Bash"]
+tools: ["View", "Replace", "Edit", "MultiEdit", "Bash", "ReadNotebook", "NotebookEditCell"]
 color: blue
 ---
 

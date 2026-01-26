@@ -260,35 +260,29 @@ import('./entrypoints/cli.js').catch(err => {
 });
 `)
 
-  // Copy DiffSR-main to dist/services/diffsr
-  const diffSRSource = join(SRC_DIR, 'services', 'diffsr')
-  const predictionSource = join(SRC_DIR, 'services', 'prediction')
-  const preprocessSource = join(SRC_DIR, 'services', 'preprocessing')
-  const diffSRTarget = join(OUT_DIR, 'services', 'diffsr')
-  const predictionTarget = join(OUT_DIR, 'services', 'prediction')
-  const preprocessTarget = join(OUT_DIR, 'services', 'preprocessing')
-  try {
-    if (existsSync(diffSRSource)) {
-      cpSync(diffSRSource, diffSRTarget, { recursive: true })
-      console.log('✅ DiffSR-main copied to dist/services/diffsr')
-    } else {
-      console.warn('⚠️  DiffSR-main not found at src/services/diffsr')
+  // Copy python resources to dist/services
+  const services = [
+    { name: 'DiffSR-main', folder: 'diffsr' },
+    { name: 'Prediction service', folder: 'prediction' },
+    { name: 'Preprocessing service', folder: 'preprocessing' },
+    { name: 'Visualization service', folder: 'visualization' }
+  ];
+
+  services.forEach(({ name, folder }) => {
+    const source = join(SRC_DIR, 'services', folder);
+    const target = join(OUT_DIR, 'services', folder);
+    
+    try {
+      if (existsSync(source)) {
+        cpSync(source, target, { recursive: true });
+        console.log(`✅ ${name} copied to dist/services/${folder}`);
+      } else {
+        console.warn(`⚠️  ${name} not found at src/services/${folder}`);
+      }
+    } catch (err) {
+      console.warn(`⚠️  Could not copy ${name}:`, err.message);
     }
-    if (existsSync(predictionSource)) {
-      cpSync(predictionSource, predictionTarget, { recursive: true })
-      console.log('✅ Prediction service copied to dist/services/prediction')
-    } else {
-      console.warn('⚠️  Prediction service not found at src/services/prediction')
-    }
-    if (existsSync(preprocessSource)) {
-      cpSync(preprocessSource, preprocessTarget, { recursive: true })
-      console.log('✅ Preprocessing service copied to dist/services/preprocessing')
-    } else {
-      console.warn('⚠️  Preprocessing service not found at src/services/preprocessing')
-    }
-  } catch (err) {
-    console.warn('⚠️  Could not copy DiffSR-main:', err.message)
-  }
+  });
 
   // Create cross-platform CLI wrapper
   const cliWrapper = `#!/usr/bin/env node

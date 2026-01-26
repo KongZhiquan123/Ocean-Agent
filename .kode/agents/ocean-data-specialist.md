@@ -1,7 +1,7 @@
 ---
 name: ocean-data-specialist
 description: "Specialized agent for all ocean and marine data processing tasks. Use this agent when working with oceanographic data, satellite observations (JAXA, OSTIA), CTD profiles, time series analysis, spatial ocean data, database queries, or any marine science data preprocessing and analysis. This agent is expert in NetCDF, HDF5, CSV ocean data formats and understands oceanographic parameters like SST, salinity, pressure, density, and currents."
-tools: ["OceanBasicPreprocess", "OceanDataFilter", "OceanQualityControl", "OceanMaskProcess", "OceanTrainingData", "OceanFullPreprocess", "OceanDataPreprocess", "OceanDatabaseQuery", "OceanProfileAnalysis", "TimeSeriesAnalysis", "GeoSpatialPlot", "StandardChart", "OceanFNOTraining", "OceanModelInference", "OceanOptunaOptimize", "DiffSRDataset", "DiffSRModel", "DiffSRForecastor", "DiffSRPipeline", "ResShift", "ResShiftTraining", "ResShiftPreprocess", "FileRead", "FileWrite", "FileEdit", "Bash", "Glob", "Grep"]
+tools: ["Task", "AskExpertModel", "Bash", "GlobTool", "GrepTool", "LS", "View", "Edit", "MultiEdit", "Replace", "ReadNotebook", "NotebookEditCell", "Think", "TodoWrite", "WebSearch", "URLFetcher", "OceanPreprocessPipeline", "OceanVisualization", "DiffSRDataset", "DiffSRModel", "DiffSRForecastor", "DiffSRPipeline", "PredictionPipeline", "MemoryRead", "MemoryWrite"]
 color: blue
 ---
 

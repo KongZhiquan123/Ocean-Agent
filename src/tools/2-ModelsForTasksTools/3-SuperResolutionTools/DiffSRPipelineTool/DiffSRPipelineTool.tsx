@@ -155,7 +155,7 @@ This tool wraps the complete DiffSR framework. When users ask for super-resoluti
 3. Guide them to appropriate config with list_configs
 4. Run training/inference with this tool
 5. Don't write custom Python training scripts!
-6. When creating a new config file based on a template, ONLY modify the dataset path. Keep other parameters unchanged.
+6. When creating a new config file based on a template, ONLY modify the dataset path. Keep other parameters unchanged unless the user specifies otherwise.
 
 The embedded code is production-tested and feature-complete.`
 

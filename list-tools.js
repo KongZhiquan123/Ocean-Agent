@@ -6,7 +6,8 @@ console.log('========================================')
 console.log('📊 Kode CLI 工具清单')
 console.log('========================================')
 console.log(`总工具数: ${tools.length}\n`)
-
+console.log('工具列表:\n')
+console.log(`[${tools.map(tool => `"${tool.name}"`).join(', ')}]\n`)
 // 按类别分组
 const categories = {
   Ocean: [],
