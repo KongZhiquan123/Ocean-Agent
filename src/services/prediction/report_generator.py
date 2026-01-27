@@ -32,7 +32,8 @@ class PredictionReportGenerator:
     def generate_train_report(self,
                               config: Dict[str, Any],
                               metrics: Dict[str, Any],
-                              output_path: str) -> str:
+                              output_path: str,
+                              viz_paths: Optional[List[str]] = None) -> str:
         """
         生成训练报告
 
@@ -40,6 +41,7 @@ class PredictionReportGenerator:
             config: 训练配置信息
             metrics: 训练指标和结果
             output_path: 报告输出路径
+            viz_paths: 可视化图片路径列表（可选）
 
         Returns:
             生成的报告路径
@@ -177,6 +179,9 @@ class PredictionReportGenerator:
             summary_table
         )
 
+        # 4. 可视化结果处理
+        report = self._process_visualization_section(report, viz_paths)
+
         # 写入报告
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -262,6 +267,42 @@ class PredictionReportGenerator:
         return str(output_path)
 
     # 辅助函数：生成各种表格
+
+    def _process_visualization_section(self, report: str, viz_paths: Optional[List[str]]) -> str:
+        """
+        处理可视化部分的占位符
+        Args:
+            report: 报告内容
+            viz_paths: 可视化图片路径列表
+        Returns:
+            处理后的报告内容
+        """
+        # 处理 VIZ_FILE_LIST 占位符
+        viz_file_list_placeholder = "<!-- VIZ_FILE_LIST: 脚本自动填充，列出所有生成的可视化图片路径 -->"
+        if viz_paths and len(viz_paths) > 0:
+            file_list = "\n".join([f"- `{path}`" for path in viz_paths])
+            report = report.replace(viz_file_list_placeholder, file_list)
+        else:
+            report = report.replace(viz_file_list_placeholder, "*暂无可视化文件*")
+
+        # 处理 VIZ_IMAGES 占位符
+        viz_images_placeholder = "<!-- VIZ_IMAGES: 脚本自动填充，插入所有可视化图片 -->"
+        if viz_paths and len(viz_paths) > 0:
+            images_md = []
+            for path in viz_paths:
+                # 从路径中提取文件名作为图片标题
+                import os
+                filename = os.path.basename(path)
+                name = os.path.splitext(filename)[0]
+                # 将下划线替换为空格，首字母大写
+                title = name.replace("_", " ").title()
+                images_md.append(f"#### {title}\n\n![{title}]({path})")
+            report = report.replace(viz_images_placeholder, "\n\n".join(images_md))
+        else:
+            report = report.replace(viz_images_placeholder, "*暂无可视化图片*")
+
+        # 注意：AI_FILL 占位符保留不处理，由 AI 后续填充
+        return report
 
     def _generate_model_config_table(self, config: Dict[str, Any]) -> str:
         """生成模型配置表格"""
@@ -401,7 +442,12 @@ class PredictionReportGenerator:
         return '\n'.join(rows)
 
 
-def generate_train_report_from_file(config_file: str, metrics_file: str, output_path: str) -> str:
+def generate_train_report_from_file(
+    config_file: str,
+    metrics_file: str,
+    output_path: str,
+    viz_paths: Optional[List[str]] = None
+) -> str:
     """
     从文件生成训练报告的便捷函数
 
@@ -409,6 +455,7 @@ def generate_train_report_from_file(config_file: str, metrics_file: str, output_
         config_file: 配置JSON文件路径
         metrics_file: 指标JSON文件路径
         output_path: 输出报告路径
+        viz_paths: 可视化图片路径列表（可选）
 
     Returns:
         生成的报告路径
@@ -420,7 +467,7 @@ def generate_train_report_from_file(config_file: str, metrics_file: str, output_
         metrics = json.load(f)
 
     generator = PredictionReportGenerator()
-    return generator.generate_train_report(config, metrics, output_path)
+    return generator.generate_train_report(config, metrics, output_path, viz_paths)
 
 
 def generate_data_report_from_file(data_info_file: str, processing_info_file: str, output_path: str) -> str:
@@ -450,14 +497,21 @@ if __name__ == '__main__':
 
     if len(sys.argv) < 4:
         print("用法:")
-        print("  生成训练报告: python report_generator.py train <config.json> <metrics.json> <output.md>")
+        print("  生成训练报告: python report_generator.py train <config.json> <metrics.json> <output.md> [--viz_paths path1,path2,...]")
         print("  生成数据报告: python report_generator.py data <data_info.json> <processing_info.json> <output.md>")
         sys.exit(1)
 
     report_type = sys.argv[1]
 
     if report_type == 'train':
-        generate_train_report_from_file(sys.argv[2], sys.argv[3], sys.argv[4])
+        # 解析可选的 --viz_paths 参数
+        viz_paths = None
+        for i, arg in enumerate(sys.argv):
+            if arg == "--viz_paths" and i + 1 < len(sys.argv):
+                viz_paths_str = sys.argv[i + 1]
+                viz_paths = [p.strip() for p in viz_paths_str.split(",") if p.strip()]
+                break
+        generate_train_report_from_file(sys.argv[2], sys.argv[3], sys.argv[4], viz_paths)
     elif report_type == 'data':
         generate_data_report_from_file(sys.argv[2], sys.argv[3], sys.argv[4])
     else:

@@ -60,7 +60,7 @@ def get_dir_path(model, dataset, path):
     date = datetime.now().strftime("%m_%d")
     shanghai_tz = pytz.timezone('Asia/Shanghai')
     time = datetime.now(shanghai_tz).strftime("_%H_%M_%S")
-    dir_path = os.path.join(path, dataset, date, model + time)
+    dir_path = os.path.abspath(path)
     os.makedirs(dir_path, exist_ok=True)
     dir_name = date + "_" + model + time
     return dir_path, dir_name

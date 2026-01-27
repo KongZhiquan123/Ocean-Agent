@@ -327,14 +327,12 @@ When you read the generated report and encounter AI_FILL placeholders:
 
 3. Generate report with visualizations (Step 3):
 
-   bash: python /opt/kode/dist/services/diffsr/report_generator.py train(or test) \
+   bash: python /opt/kode/dist/services/diffsr/report_generator.py train \
          outputs/config.json \
          outputs/metrics.json \
          outputs/training_report.md \
          --viz_paths "outputs/visualizations/loss_curve.png,outputs/visualizations/psnr_curve.png,outputs/visualizations/ssim_curve.png,outputs/visualizations/sst_map.png"
 
-   Note report_generator.py may be located in a different path(e.g. /opt/kode/dist/services/prediction/report_generator.py ) depending on 
-   current tasks.
    → Report generated: outputs/training_report.md
    → VIZ_FILE_LIST and VIZ_IMAGES placeholders automatically filled
    → AI_FILL placeholders preserved for manual analysis

@@ -253,8 +253,6 @@ When you read the generated report and see AI_FILL placeholders:
          outputs/metrics.json \\
          outputs/training_report.md \\
          --viz_paths "outputs/visualizations/loss_curve.png,outputs/visualizations/psnr_curve.png,outputs/visualizations/ssim_curve.png,outputs/visualizations/sst_map.png"
-   Note report_generator.py may be located in a different path(e.g. /opt/kode/dist/services/prediction/report_generator.py ) depending on 
-   current tasks.
 
 4. AI analysis (YOU DO THIS NEXT):
    - Read outputs/training_report.md

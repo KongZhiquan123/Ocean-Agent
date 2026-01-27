@@ -444,9 +444,9 @@ print(json.dumps(configs, indent=2))
 					if (!reportPath) {
 						yield {
 							type: 'result' as const,
-							resultForAssistant: '⚠️  Training report not found.',
+							resultForAssistant: '⚠️  Cannot generate training report.',
 							data: {
-								result: '⚠️  Training report not found.',
+								result: '⚠️  Cannot generate training report.',
 								durationMs: Date.now() - start,
 							}
 						}

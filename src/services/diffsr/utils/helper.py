@@ -36,13 +36,12 @@ def save_config(args, saving_path):
 
 def get_dir_path(args, create_dir=True):
     model = args['model']['name']
-    dataset = args['data']['name']
     path = args['log']['log_dir']
     date = datetime.now().strftime("%m_%d")
     time = datetime.now().strftime("_%H_%M_%S")
-    dir_path = os.path.join(path, dataset, date, model + time)
+    dir_path = os.path.abspath(path)
     if create_dir:
-        os.makedirs(dir_path)
+        os.makedirs(dir_path, exist_ok=True)
     dir_name = date + "_" + model + time
     return dir_path, dir_name
 

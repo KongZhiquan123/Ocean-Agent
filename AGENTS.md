@@ -333,7 +333,6 @@ When you read the generated report and encounter AI_FILL placeholders:
          outputs/training_report.md \
          --viz_paths "outputs/visualizations/loss_curve.png,outputs/visualizations/psnr_curve.png,outputs/visualizations/ssim_curve.png,outputs/visualizations/sst_map.png"
 
-   Note report_generator.py may be located in a different path depending on deployment.
    → Report generated: outputs/training_report.md
    → VIZ_FILE_LIST and VIZ_IMAGES placeholders automatically filled
    → AI_FILL placeholders preserved for manual analysis
