@@ -84,9 +84,20 @@ class PredictionReportGenerator:
             '- ✅ **模型训练**: ',
             f'- ✅ **模型训练**: 成功完成 {best_epoch} 个 epochs'
         )
+
+        # 格式化测试性能字符串，添加类型检查
+        perf_parts = []
+        if isinstance(best_r2, (int, float)):
+            perf_parts.append(f"R² {best_r2:.4f}")
+        if isinstance(best_rmse, (int, float)):
+            perf_parts.append(f"RMSE {best_rmse:.4f}")
+        if isinstance(best_mae, (int, float)):
+            perf_parts.append(f"MAE {best_mae:.4f}")
+        test_perf_str = ", ".join(perf_parts) if perf_parts else "N/A"
+
         report = report.replace(
             '- ✅ **测试性能**:',
-            f'- ✅ **测试性能**: R² {best_r2:.4f}, RMSE {best_rmse:.4f}, MAE {best_mae:.4f}'
+            f'- ✅ **测试性能**: {test_perf_str}'
         )
         report = report.replace(
             '- ✅ **模型检查点**: ',
@@ -98,25 +109,37 @@ class PredictionReportGenerator:
         )
 
         # 填充关键指标
+        # 处理参数量格式化
+        if isinstance(num_params, (int, float)):
+            param_str = f"{num_params:,}"
+        else:
+            param_str = str(num_params)
+
         report = report.replace(
             '- **参数量**: ',
-            f'- **参数量**: {num_params:,}' if isinstance(num_params, int) else f'- **参数量**: {num_params}'
+            f'- **参数量**: {param_str}'
         )
         report = report.replace(
             '- **训练模式**: ',
             f'- **训练模式**: {config.get("train", {}).get("distribute_mode", "单GPU")}'
         )
+
+        # 格式化关键指标，添加类型检查
+        r2_str = f"{best_r2:.4f}" if isinstance(best_r2, (int, float)) else str(best_r2)
+        rmse_str = f"{best_rmse:.4f}" if isinstance(best_rmse, (int, float)) else str(best_rmse)
+        mae_str = f"{best_mae:.4f}" if isinstance(best_mae, (int, float)) else str(best_mae)
+
         report = report.replace(
             '- **最终测试集 R²**: ',
-            f'- **最终测试集 R²**: {best_r2:.4f}'
+            f'- **最终测试集 R²**: {r2_str}'
         )
         report = report.replace(
             '- **最终测试集 RMSE**: ',
-            f'- **最终测试集 RMSE**: {best_rmse:.4f}'
+            f'- **最终测试集 RMSE**: {rmse_str}'
         )
         report = report.replace(
             '- **最终测试集 MAE**: ',
-            f'- **最终测试集 MAE**: {best_mae:.4f}'
+            f'- **最终测试集 MAE**: {mae_str}'
         )
 
         # 填充训练配置表格
@@ -153,6 +176,15 @@ class PredictionReportGenerator:
             gpu_config
         )
 
+        # 2.2 训练曲线 - 生成 Markdown 表格
+        train_history = metrics.get('train_history', [])
+        if train_history:
+            loss_table = self._generate_loss_curve_table(train_history)
+            report = report.replace(
+                '#### 损失下降趋势\n\n',
+                f'#### 损失下降趋势\n\n{loss_table}\n'
+            )
+
         # 2.3 验证集性能演进
         valid_history = metrics.get('valid_history', [])
         if valid_history:
@@ -165,12 +197,21 @@ class PredictionReportGenerator:
         # 3.2 测试集指标
         test_metrics = metrics.get('test_metrics', {})
         test_table = self._generate_test_metrics_table(test_metrics)
-        test_section_marker = '### 3.2 测试集指标 (最终评估)\\n\\n| 指标 | 值 | 说明 |'
+        # 找到 "### 3.2 测试集指标" 下的表格并替换
+        test_section_marker = '### 3.2 测试集指标 (最终评估)\n\n| 指标 | 值 | 说明 |'
         if test_section_marker in report:
             report = report.replace(
-                '| 指标 | 值 | 说明 |\\n|------|-----|------|',
+                '| 指标 | 值 | 说明 |\n|------|-----|------|',
                 test_table
             )
+
+        # 5.1 保存的检查点
+        checkpoints = metrics.get('checkpoints', [])
+        checkpoint_table = self._generate_checkpoint_table(checkpoints)
+        report = report.replace(
+            '### 5.1 模型检查点\n\n',
+            f'### 5.1 模型检查点\n\n{checkpoint_table}\n'
+        )
 
         # 8.2 关键数据总结
         summary_table = self._generate_summary_table(config, metrics)
@@ -358,6 +399,30 @@ class PredictionReportGenerator:
         ]
         return '\n'.join(rows)
 
+    def _generate_loss_curve_table(self, history: List[Dict]) -> str:
+        """生成损失曲线表格"""
+        if not history:
+            return "暂无数据"
+
+        # 只显示关键 epochs
+        key_epochs = []
+        for i, h in enumerate(history):
+            if i == 0 or i == len(history) - 1 or i % max(len(history) // 10, 1) == 0:
+                key_epochs.append(h)
+
+        rows = ["| Epoch | Train Loss | Valid Loss |", "|-------|------------|------------|"]
+        for h in key_epochs:
+            epoch = h.get('epoch', 'N/A')
+            train_loss = h.get('train_loss', 'N/A')
+            valid_loss = h.get('valid_loss', 'N/A')
+
+            t_loss_str = f"{train_loss:.6f}" if isinstance(train_loss, (int, float)) else str(train_loss)
+            v_loss_str = f"{valid_loss:.6f}" if isinstance(valid_loss, (int, float)) else str(valid_loss)
+
+            rows.append(f"| {epoch} | {t_loss_str} | {v_loss_str} |")
+
+        return '\n'.join(rows)
+
     def _generate_validation_table(self, history: List[Dict]) -> str:
         """生成验证集性能表格"""
         if not history:
@@ -375,40 +440,90 @@ class PredictionReportGenerator:
             r2 = h.get('valid_r2', 0)
 
             improvement = ""
-            if prev_loss is not None and isinstance(loss, (int, float)):
+            if prev_loss is not None and isinstance(loss, (int, float)) and isinstance(prev_loss, (int, float)) and prev_loss != 0:
                 improvement = f"{(prev_loss - loss) / prev_loss * 100:.2f}%"
             prev_loss = loss
 
-            rows.append(f"| {epoch} | {loss:.6f} | {mae:.4f} | {rmse:.4f} | {r2:.4f} | {improvement} |")
+            # 格式化数值
+            loss_str = f"{loss:.6f}" if isinstance(loss, (int, float)) else str(loss)
+            mae_str = f"{mae:.4f}" if isinstance(mae, (int, float)) else str(mae)
+            rmse_str = f"{rmse:.4f}" if isinstance(rmse, (int, float)) else str(rmse)
+            r2_str = f"{r2:.4f}" if isinstance(r2, (int, float)) else str(r2)
+
+            rows.append(f"| {epoch} | {loss_str} | {mae_str} | {rmse_str} | {r2_str} | {improvement} |")
 
         return '\n'.join(rows)
 
     def _generate_test_metrics_table(self, metrics: Dict[str, Any]) -> str:
         """生成测试集指标表格"""
+        r2 = metrics.get('r2', 'N/A')
+        rmse = metrics.get('rmse', 'N/A')
+        mae = metrics.get('mae', 'N/A')
+        mse = metrics.get('mse', 'N/A')
+        mape = metrics.get('mape', 'N/A')
+
+        # 格式化数值
+        r2_str = f"{r2:.4f}" if isinstance(r2, (int, float)) else str(r2)
+        rmse_str = f"{rmse:.4f}" if isinstance(rmse, (int, float)) else str(rmse)
+        mae_str = f"{mae:.4f}" if isinstance(mae, (int, float)) else str(mae)
+        mse_str = f"{mse:.6f}" if isinstance(mse, (int, float)) else str(mse)
+        mape_str = f"{mape:.2f}%" if isinstance(mape, (int, float)) else str(mape)
+
         rows = [
             "| 指标 | 值 | 说明 |",
             "|------|-----|------|",
-            f"| **R²** | {metrics.get('r2', 'N/A'):.4f} | 决定系数 |",
-            f"| **RMSE** | {metrics.get('rmse', 'N/A'):.4f} | 均方根误差 |",
-            f"| **MAE** | {metrics.get('mae', 'N/A'):.4f} | 平均绝对误差 |",
-            f"| **MSE** | {metrics.get('mse', 'N/A'):.6f} | 均方误差 |",
-            f"| **MAPE** | {metrics.get('mape', 'N/A'):.2f}% | 平均绝对百分比误差 |",
+            f"| **R²** | {r2_str} | 决定系数 |",
+            f"| **RMSE** | {rmse_str} | 均方根误差 |",
+            f"| **MAE** | {mae_str} | 平均绝对误差 |",
+            f"| **MSE** | {mse_str} | 均方误差 |",
+            f"| **MAPE** | {mape_str} | 平均绝对百分比误差 |",
         ]
+        return '\n'.join(rows)
+
+    def _generate_checkpoint_table(self, checkpoints: List[Dict]) -> str:
+        """生成检查点表格"""
+        if not checkpoints:
+            return "| 迭代数 | 文件名 | 大小 | 保存时间 |\n|--------|--------|------|----------|\n"
+
+        rows = ["| 迭代数 | 文件名 | 大小 | 保存时间 |",
+                "|--------|--------|------|----------|"]
+
+        for ckpt in checkpoints:
+            epoch = ckpt.get('epoch', 'N/A')
+            filename = ckpt.get('filename', 'N/A')
+            size = ckpt.get('size', 'N/A')
+            timestamp = ckpt.get('timestamp', 'N/A')
+            rows.append(f"| {epoch} | {filename} | {size} | {timestamp} |")
+
         return '\n'.join(rows)
 
     def _generate_summary_table(self, config: Dict, metrics: Dict) -> str:
         """生成总结表格"""
         data_config = config.get('data', {})
+
+        # 格式化数值
+        num_params = config.get('model', {}).get('num_params', None)
+        num_params_str = f"{num_params:,}" if isinstance(num_params, (int, float)) else "N/A"
+
+        best_r2 = metrics.get('best_r2', None)
+        r2_str = f"{best_r2:.4f}" if isinstance(best_r2, (int, float)) else "N/A"
+
+        best_rmse = metrics.get('best_rmse', None)
+        rmse_str = f"{best_rmse:.4f}" if isinstance(best_rmse, (int, float)) else "N/A"
+
+        best_mae = metrics.get('best_mae', None)
+        mae_str = f"{best_mae:.4f}" if isinstance(best_mae, (int, float)) else "N/A"
+
         rows = [
             "| 项目 | 数值 |",
             "|------|------|",
             f"| 训练样本 | {data_config.get('train_samples', 'N/A')} |",
             f"| 测试样本 | {data_config.get('test_samples', 'N/A')} |",
-            f"| 模型参数 | {config.get('model', {}).get('num_params', 'N/A'):,} |" if isinstance(config.get('model', {}).get('num_params'), int) else f"| 模型参数 | {config.get('model', {}).get('num_params', 'N/A')} |",
+            f"| 模型参数 | {num_params_str} |",
             f"| 训练时长 | {metrics.get('total_time', 'N/A')} 秒 |",
-            f"| 最终R² | {metrics.get('best_r2', 'N/A'):.4f} |",
-            f"| 最终RMSE | {metrics.get('best_rmse', 'N/A'):.4f} |",
-            f"| 最终MAE | {metrics.get('best_mae', 'N/A'):.4f} |",
+            f"| 最终R² | {r2_str} |",
+            f"| 最终RMSE | {rmse_str} |",
+            f"| 最终MAE | {mae_str} |",
         ]
         return '\n'.join(rows)
 
@@ -426,7 +541,15 @@ class PredictionReportGenerator:
             max_val = var_stats.get('max', 'N/A')
             mean = var_stats.get('mean', 'N/A')
             std = var_stats.get('std', 'N/A')
-            rows.append(f"| {var_name} | {min_val:.4f} | {max_val:.4f} | {mean:.4f} | {std:.4f} | {nan_ratio*100:.2f}% |")
+
+            # 格式化数值
+            min_str = f"{min_val:.4f}" if isinstance(min_val, (int, float)) else str(min_val)
+            max_str = f"{max_val:.4f}" if isinstance(max_val, (int, float)) else str(max_val)
+            mean_str = f"{mean:.4f}" if isinstance(mean, (int, float)) else str(mean)
+            std_str = f"{std:.4f}" if isinstance(std, (int, float)) else str(std)
+            nan_ratio_str = f"{nan_ratio*100:.2f}%" if isinstance(nan_ratio, (int, float)) else str(nan_ratio)
+
+            rows.append(f"| {var_name} | {min_str} | {max_str} | {mean_str} | {std_str} | {nan_ratio_str} |")
 
         return '\n'.join(rows)
 
@@ -460,11 +583,27 @@ def generate_train_report_from_file(
     Returns:
         生成的报告路径
     """
-    with open(config_file, 'r') as f:
+    # 先读取配置和指标文件
+    with open(config_file, 'r', encoding='utf-8') as f:
         config = json.load(f)
 
-    with open(metrics_file, 'r') as f:
+    with open(metrics_file, 'r', encoding='utf-8') as f:
         metrics = json.load(f)
+
+    # --- 自动备份 JSON（可选） ---
+    try:
+        output_dir = Path(output_path).parent
+        output_dir.mkdir(parents=True, exist_ok=True)
+        # 备份 config.json
+        config_save_path = output_dir / "config_backup.json"
+        with open(config_save_path, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=4, ensure_ascii=False, default=str)
+        # 备份 metrics.json
+        metrics_save_path = output_dir / "metrics_backup.json"
+        with open(metrics_save_path, 'w', encoding='utf-8') as f:
+            json.dump(metrics, f, indent=4, ensure_ascii=False, default=str)
+    except Exception as e:
+        print(f"Warning: Could not backup JSON files: {e}")
 
     generator = PredictionReportGenerator()
     return generator.generate_train_report(config, metrics, output_path, viz_paths)

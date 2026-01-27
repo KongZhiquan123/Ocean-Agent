@@ -90,15 +90,107 @@ Example usage:
   "epochs": 100,
   "batch_size": 8
 }`;
-#### 1.2 关键配置项检查
+
+#### 1.2 GPU 显存计算与参数调整 ⚠️ 必须执行
+
+在修改配置文件中的 `train_batchsize`, `eval_batchsize`, `shape` 参数前，**必须先计算 GPU 显存占用**。
+
+##### 激活值显存计算公式
+
+```
+单层激活显存 = batch × seq_len × H × W × hidden_dim × 4 bytes
+总激活显存 = 单层激活显存 × 网络层数
+```
+
+其中：
+- `batch`: 批次大小 (train_batchsize 或 eval_batchsize)
+- `seq_len`: 序列长度，通常为 1（对于超分任务）
+- `H, W`: 输入空间分辨率 (shape 参数)
+- `hidden_dim`: 模型隐藏层维度（从模板配置中读取，如 FNO 通常为 256-512）
+- `4 bytes`: FP32 单精度浮点数占用字节数
+- `网络层数`: 模型深度（从模板配置中读取）
+
+##### 显存安全阈值
+
+```
+可用显存 = GPU总显存 × 0.7
+```
+
+**原因**: 预留 30% 显存给：
+- 模型权重 (~10%)
+- 梯度 (~10%)
+- 优化器状态 (如 Adam: ~10%)
+
+##### 计算步骤
+
+**步骤 1**: 运行 `nvidia-smi` 检查 GPU 显存
+```bash
+nvidia-smi --query-gpu=name,memory.total --format=csv
+```
+
+**步骤 2**: 从模板配置读取模型参数
+- 读取 `model.width` (hidden_dim)
+- 读取模型层数（不同模型不同，FNO 通常 4-8 层）
+- 读取 `data.shape` (H, W)
+
+**步骤 3**: 计算并验证
+```python
+# 示例计算
+GPU_VRAM = 24  # GB
+available_memory = GPU_VRAM * 0.7  # 16.8 GB
+
+batch_size = 8
+H, W = 128, 128
+hidden_dim = 256
+num_layers = 10
+seq_len = 1
+
+per_layer = batch_size * seq_len * H * W * hidden_dim * 4 / (1024**3)  # GB
+total_activation = per_layer * num_layers
+
+print(f"Per-layer activation: {per_layer:.2f} GB")
+print(f"Total activation memory: {total_activation:.2f} GB")
+print(f"Available memory: {available_memory:.2f} GB")
+print(f"Status: {'✅ Safe' if total_activation < available_memory else '❌ Exceeds'}")
+```
+
+**步骤 4**: 如果显存不足，调整策略
+- **优先**: 降低 `train_batchsize` (如 8 → 4 → 2)
+- **次要**: 降低空间分辨率 `shape` (如 [128,128] → [96,96] → [64,64])
+- **最后**: 使用梯度累积 (gradient accumulation) 模拟大 batch
+
+##### 实例：24GB GPU 配置建议
+
+| 分辨率 (H×W) | Hidden Dim | 层数 | 推荐 Batch | 显存占用 | 状态 |
+|--------------|------------|------|-----------|---------|------|
+| 64×64        | 256        | 10   | 16        | ~2.7 GB | ✅ 安全 |
+| 128×128      | 256        | 10   | 8         | ~10.7 GB| ✅ 安全 |
+| 128×128      | 512        | 10   | 4         | ~10.7 GB| ✅ 安全 |
+| 256×256      | 256        | 10   | 2         | ~10.7 GB| ✅ 安全 |
+| 256×256      | 512        | 10   | 1         | ~10.7 GB| ✅ 安全 |
+| 512×512      | 256        | 10   | 1         | ~42.9 GB| ❌ 超限 |
+
+**重要**: 在修改配置文件后，必须将计算结果展示给用户确认后再启动训练。
+
+#### 1.3 关键配置项检查
 必须检查并确认以下配置:
 - **选择的操作**
-- **数据路径**
-- **模型类型**
-- **模型参数**
-- **训练参数**
-- **GPU 设置**
-- **保存路径**
+- **数据路径** (data_path)
+- **模型类型** (model_type)
+- **模型参数** (hidden_dim, num_layers)
+- **训练参数** (epochs, learning_rate)
+- **批次大小** (train_batchsize, eval_batchsize) ← ⚠️ 需显存计算验证
+- **空间分辨率** (shape: [H, W]) ← ⚠️ 需显存计算验证
+- **GPU 设置** (gpu_id, CUDA_VISIBLE_DEVICES)
+- **保存路径** (output_path)
+
+**显存验证清单**:
+- [ ] 已运行 nvidia-smi 检查 GPU 显存
+- [ ] 已从模板读取 hidden_dim 和 num_layers
+- [ ] 已计算单层激活显存
+- [ ] 已计算总激活显存
+- [ ] 总激活显存 < GPU显存 × 0.7
+- [ ] 已向用户展示计算结果并获得确认
 
 ### 2. 训练启动脚本准备
 根据步骤1的参数配置和模型的tool,TrainingTool生成run.sh训练脚本。

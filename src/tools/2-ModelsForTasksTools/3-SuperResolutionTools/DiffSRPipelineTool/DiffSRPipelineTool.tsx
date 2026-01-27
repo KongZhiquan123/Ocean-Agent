@@ -104,14 +104,35 @@ Optional: output_dir, gpu_id
 ### Training a New Model:
 1. list_configs → Find appropriate template
 2. Prepare data with DiffSRDataset tool
-3. train → Run training with config
-4. Monitor training progress in output_dir
+3. ⚠️ Calculate GPU memory with gpu_memory_calculator.py
+4. train → Run training with config
+5. Monitor training progress in output_dir
 
 ### Running Inference:
 1. Prepare low-resolution input data
 2. inference → Generate super-resolution output
 3. Visualize results with GeoSpatialPlot/StandardChart
 4. Generate training report → python src/services/diffsr/report_generator.py train
+
+## GPU Memory Calculator
+
+Before training, ALWAYS verify memory usage:
+
+\`\`\`bash
+# From config file
+python src/services/diffsr/gpu_memory_calculator.py --config configs/my_config.yaml
+
+# Manual parameters
+python src/services/diffsr/gpu_memory_calculator.py \\
+  --batch 8 --height 128 --width 128 \\
+  --hidden_dim 256 --num_layers 10 --gpu_memory 24
+\`\`\`
+
+The calculator will:
+- ✅ Check if configuration is safe
+- ⚠️ Warn if OOM risk exists
+- 💡 Suggest adjusted parameters
+
 ## Example - Train FNO Model:
 {
   "operation": "train",
@@ -156,7 +177,34 @@ This tool wraps the complete DiffSR framework. When users ask for super-resoluti
 3. Guide them to appropriate config with list_configs
 4. Run training/inference with this tool
 5. Don't write custom Python training scripts!
-6. When creating a new config file based on a template, ONLY modify the dataset path. Keep other parameters unchanged unless the user specifies otherwise.
+6. When creating a new config file based on a template, you can modify the following parameters:
+   - **data_path** (required): Path to preprocessed dataset
+   - **shape** (optional): Input spatial resolution [H, W]
+   - **train_batchsize** (optional): Training batch size
+   - **eval_batchsize** (optional): Evaluation batch size
+
+   ⚠️ **GPU Memory Constraint**: Before modifying batch size or shape, you MUST calculate GPU memory usage:
+
+   **Activation Memory Formula**:
+   Per-layer activation = batch × seq_len × H × W × hidden_dim × 4 bytes
+   Total activation memory = per-layer × num_layers
+
+   **Safety Rules**:
+   - Total activation memory must be < 70% of GPU VRAM (留30%给模型权重、梯度、优化器状态)
+   - Use nvidia-smi to check available GPU memory before training
+   - If memory is insufficient, reduce batch_size or spatial resolution (H, W)
+   - Always verify memory calculation with user before training
+
+   **Example Calculation**:
+   Given: GPU with 24GB VRAM, model with 10 layers, hidden_dim=256
+   Input: batch=8, H=128, W=128, seq_len=1
+
+   Per-layer = 8 × 1 × 128 × 128 × 256 × 4 bytes = 1.073 GB
+   Total = 1.073 GB × 10 layers = 10.73 GB
+   Available = 24GB × 0.7 = 16.8 GB
+   Result: ✅ Safe (10.73 GB < 16.8 GB)
+
+   Keep other parameters unchanged unless the user explicitly requests modifications.
 
 The embedded code is production-tested and feature-complete.`
 

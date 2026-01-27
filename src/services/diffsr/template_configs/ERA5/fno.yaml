@@ -56,7 +56,7 @@ schedule:
 
 log:
   verbose: True
-  log: True
+  log: Trueyaml
   log_dir: '/home/yc/CVPR26/DiffSR/logs/ERA5_uo/FNO2d'
   # log_dir: '/home/yc/CVPR26/DiffSR/logs/ERA5_vo/FNO2d'
   # log_dir: '/home/yc/CVPR26/DiffSR/logs/ERA5_temp/FNO2d'
