@@ -1,6 +1,14 @@
 from time import time
 from math import sqrt
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, mean_absolute_percentage_error
+import numpy as np
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+# 自定义MAPE函数以兼容旧版本sklearn
+def mean_absolute_percentage_error(y_true, y_pred):
+    """计算平均绝对百分比误差"""
+    y_true, y_pred = np.array(y_true), np.array(y_pred)
+    epsilon = 1e-10  # 避免除零
+    return np.mean(np.abs((y_true - y_pred) / (np.abs(y_true) + epsilon))) * 100
 
 
 METRIC_DICT = {

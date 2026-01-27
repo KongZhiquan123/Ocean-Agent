@@ -278,12 +278,22 @@ Bun.serve({
         'You can use uploaded data files and built-in tools to analyze data, design solutions, generate code, and execute it.',
         'When the user writes in Chinese, reply in Chinese; otherwise respond in the user language.',
       ]
+      if (body?.context?.notebookPath) {
+        systemPrompt.push(
+          `
+          You are working within the context of the Jupyter notebook at path: ${body.context.notebookPath}.
+          If the path does not exist, create a new notebook file there with appropriate content.
+          `
+        )
+      }
       systemPrompt.push(
         `
-        Always prioritize script-based execution over inline commands. 
-        For tasks involving data plotting (e.g., matplotlib, plotly) or complex logic, you must write the code into a clear, modular .py file first. 
-        Ensure the script includes all necessary imports and handles file saving (e.g., plt.savefig()) so that results are persistent. 
-        Avoid using python -c for any code exceeding 5 lines.
+        Core principle:
+        All outputs must be reproducible, reviewable, and persistent.
+        Implementation:
+        - Use notebooks when a notebook context is provided.
+        - Otherwise, use standalone scripts.
+        - Avoid inline execution for non-trivial tasks.
         `
       )
       // 🔥 Add outputs path instruction to system prompt

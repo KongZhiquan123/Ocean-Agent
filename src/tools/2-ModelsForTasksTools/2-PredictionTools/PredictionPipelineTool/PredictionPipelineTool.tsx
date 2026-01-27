@@ -264,9 +264,12 @@ print(json.dumps(configs, indent=2))
 					}
 
 
-					const reportPath = params.output_dir
+					let reportPath = params.output_dir
 						? await findFileRecursively(params.output_dir, 'training_report.md')
 						: './training_report.md'
+
+					// maybe look in logs/
+					reportPath = reportPath ?? await findFileRecursively(path.resolve(getCwd(), 'logs'), 'training_report.md')
 
 					if (!reportPath) {
 						yield {
@@ -380,9 +383,13 @@ print(json.dumps(configs, indent=2))
 						}
 					}
 
-					const reportPath = params.output_dir
+					let reportPath = params.output_dir
 						? await findFileRecursively(params.output_dir, 'test_report.md')
 						: './test_report.md'
+
+					// maybe look in logs/
+					reportPath = reportPath ?? await findFileRecursively(path.resolve(getCwd(), 'logs'), 'training_report.md')
+					
 					if (!reportPath) {
 						yield {
 							type: 'result' as const,

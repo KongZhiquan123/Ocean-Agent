@@ -39,6 +39,9 @@ RUN npm install -g pnpm && \
 # Copy Python requirements
 COPY requirements.txt ./
 # Install Python dependencies
+RUN pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu124
+RUN pip install torchdata==0.8.0
+RUN pip install dgl -f https://data.dgl.ai/wheels/torch-2.4/cu124/repo.html
 RUN pip install -r requirements.txt
 
 # Copy source code
